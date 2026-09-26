@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ドラマ・映画 視聴管理</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --accent: #bb86fc;
+      --text: #ffffff;
+      --sub-text: #a0a0a0;
+      --border: #333333;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 40px;
+    }
+    header {
+      background-color: var(--card-bg);
+      padding: 16px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .form-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+    .form-card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+    .input-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--sub-text);
+      margin-bottom: 4px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: #2a2a2a;
+      color: #fff;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--accent);
+      color: #000;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:active {
+      opacity: 0.8;
+    }
+    .filter-group {
+      margin-bottom: 16px;
+    }
+    .item-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .item-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin: 0 0 6px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      background-color: #333;
+      color: var(--accent);
+    }
+    .item-info {
+      font-size: 0.9rem;
+      color: var(--sub-text);
+      margin: 4px 0;
+    }
+    .item-memo {
+      font-size: 0.95rem;
+      margin-top: 8px;
+      white-space: pre-wrap;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #ff5252;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 4px 0;
+      margin-top: 8px;
+      width: auto;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <header>🎬 ドラマ・映画 視聴ノート</header>
+
+  <div class="container">
+    <!-- 登録フォーム -->
+    <div class="form-card">
+      <h2>新しい作品を追加</h2>
+      <form id="media-form">
+        <div class="input-group">
+          <label for="title">タイトル *</label>
+          <input type="text" id="title" required placeholder="例: VIVANT">
+        </div>
+        <div class="input-group">
+          <label for="type">区分</label>
+          <select id="type">
+            <option value="ドラマ">ドラマ</option>
+            <option value="映画">映画</option>
+            <option value="アニメ">アニメ</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="status">ステータス</label>
+          <select id="status">
+            <option value="視聴中">視聴中</option>
+            <option value="見たい">見たい</option>
+            <option value="視聴完了">視聴完了</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="memo">メモ / 感想</label>
+          <textarea id="memo" rows="3" placeholder="お気に入りの話数や感想など"></textarea>
+        </div>
+        <button type="submit">保存する</button>
+      </form>
+    </div>
+
+    <!-- 検索 & 絞り込み -->
+    <div class="filter-group">
+      <input type="text" id="search" placeholder="🔍 タイトルで検索..." oninput="renderItems()">
+    </div>
+
+    <!-- リスト表示エリア -->
+    <div id="item-list"></div>
+  </div>
+
+  <script>
+    let items = JSON.parse(localStorage.getItem('drama_items') || '[]');
+
+    const form = document.getElementById('media-form');
+    const itemList = document.getElementById('item-list');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newItem = {
+        id: Date.now(),
+        title: document.getElementById('title').value,
+        type: document.getElementById('type').value,
+        status: document.getElementById('status').value,
+        memo: document.getElementById('memo').value,
+        date: new Date().toLocaleDateString('ja-JP')
+      };
+      items.unshift(newItem);
+      saveAndRender();
+      form.reset();
+    });
+
+    function deleteItem(id) {
+      if (confirm('本当に削除しますか？')) {
+        items = items.filter(item => item.id !== id);
+        saveAndRender();
+      }
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('drama_items', JSON.stringify(items));
+      renderItems();
+    }
+
+    function renderItems() {
+      const keyword = document.getElementById('search').value.toLowerCase();
+      itemList.innerHTML = '';
+
+      const filtered = items.filter(item => item.title.toLowerCase().includes(keyword));
+
+      if (filtered.length === 0) {
+        itemList.innerHTML = '<p style="text-align:center; color:#666;">データがありません</p>';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.innerHTML = `
+          <div class="item-header">
+            <div class="item-title">${item.title}</div>
+            <span class="badge">${item.status}</span>
+          </div>
+          <div class="item-info">種別: ${item.type} | 登録日: ${item.date}</div>
+          ${item.memo ? `<div class="item-memo">${item.memo}</div>` : ''}
+          <div style="text-align: right;">
+            <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
+          </div>
+        `;
+        itemList.appendChild(card);
+      });
+    }
+
+    // 初回描画
+    renderItems();
+  </script>
+</body>
+</html>
