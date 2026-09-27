@@ -132,6 +132,52 @@
       width: auto;
       text-align: right;
     }
+
+    /* フッターバナー領域 */
+    footer {
+      margin-top: 40px;
+      padding: 24px 16px;
+      background-color: var(--card-bg);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .banner-title {
+      font-size: 0.85rem;
+      color: var(--sub-text);
+      margin-bottom: 12px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    .banner-container {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .banner-card {
+      flex: 1;
+      min-width: 140px;
+      max-width: 260px;
+      padding: 12px 16px;
+      background-color: #2a2a2a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .banner-card:active {
+      background-color: #333333;
+      border-color: var(--accent);
+    }
   </style>
 </head>
 <body>
@@ -180,6 +226,19 @@
     <!-- リスト表示エリア -->
     <div id="item-list"></div>
   </div>
+
+  <!-- 下部バナーリンクエリア -->
+  <footer>
+    <div class="banner-title">RECOMMENDED LINKS</div>
+    <div class="banner-container">
+      <a href="https://tver.jp" target="_blank" rel="noopener noreferrer" class="banner-card">
+        📺 TVerで視聴する
+      </a>
+      <a href="https://eiga.com" target="_blank" rel="noopener noreferrer" class="banner-card">
+        🎬 映画.com情報
+      </a>
+    </div>
+  </footer>
 
   <script>
     let items = JSON.parse(localStorage.getItem('drama_items') || '[]');
