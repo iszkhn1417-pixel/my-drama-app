@@ -84,7 +84,6 @@
       cursor: pointer;
     }
 
-    /* 画面の幅を広げて余白を有効活用 */
     .container {
       max-width: 900px;
       margin: 0 auto;
@@ -132,6 +131,12 @@
       font-size: 0.95rem;
     }
 
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      background-color: #ffffff;
+    }
+
     .btn-group { display: flex; gap: 8px; }
 
     button {
@@ -143,8 +148,10 @@
       font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
+      transition: background-color 0.2s;
     }
 
+    button:hover { background-color: var(--accent-hover); }
     button.btn-block { width: 100%; }
     button.btn-secondary { background-color: #a09e98; }
 
@@ -173,6 +180,8 @@
       align-items: center;
       gap: 6px;
     }
+
+    .tag .remove { cursor: pointer; color: #999; font-weight: bold; }
 
     .checkbox-group {
       display: flex;
@@ -220,6 +229,7 @@
       justify-content: space-around;
       align-items: center;
       z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
     }
 
     .nav-item {
@@ -240,7 +250,6 @@
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
     .calendar-day-header { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); padding: 6px 0; }
 
-    /* カレンダーマスの拡大（PC/大きな画面用） */
     .calendar-cell {
       min-height: 110px;
       background: #ffffff;
@@ -254,7 +263,6 @@
       transition: background-color 0.2s;
     }
 
-    /* 今日の日付の特別デザイン */
     .calendar-cell.is-today {
       background-color: var(--today-bg) !important;
       border: 2px solid var(--today-accent) !important;
@@ -293,15 +301,50 @@
 
     .calendar-event.unread { background-color: var(--unread-red); color: white; }
 
-    /* スマホ等画面が狭い場合調整 */
+    .alert-box {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    .star-rating {
+      font-size: 1.4rem;
+      color: #ccc;
+      cursor: pointer;
+    }
+    .star-rating .star.active { color: #f39c12; }
+
+    .setting-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .setting-item {
+      background: #faf8f5;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .setting-item .delete-btn {
+      color: #999;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
     @media (max-width: 600px) {
-      .calendar-cell {
-        min-height: 75px;
-      }
-      .calendar-event {
-        font-size: 0.65rem;
-        padding: 2px 3px;
-      }
+      .calendar-cell { min-height: 75px; }
+      .calendar-event { font-size: 0.65rem; padding: 2px 3px; }
     }
 
     .sync-status {
@@ -322,7 +365,7 @@
   </header>
 
   <div class="container">
-    <div id="sync-indicator" class="sync-status">オフライン（端末に保存中）</div>
+    <div id="sync-indicator" class="sync-status">⚪ オフライン（端末に保存中）</div>
 
     <!-- 1. 📝 登録タブ -->
     <div id="tab-register" class="tab-content">
@@ -423,7 +466,6 @@
           <h3 id="calendar-month-title" style="margin: 0;">2026年 10月</h3>
           <button type="button" onclick="changeMonth(1)">次月 ▶</button>
         </div>
-        <!-- 月曜始まりヘッダー -->
         <div class="calendar-grid">
           <div class="calendar-day-header">月</div>
           <div class="calendar-day-header">火</div>
@@ -439,6 +481,7 @@
 
     <!-- 4. ★ 履歴タブ -->
     <div id="tab-history" class="tab-content">
+      <div id="unrated-alert-container"></div>
       <div class="card">
         <h2>完了作品の検索</h2>
         <input type="text" id="history-search" placeholder="🔍 タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
@@ -449,24 +492,65 @@
       </div>
     </div>
 
-    <!-- 5. ⚙️ 設定タブ -->
+    <!-- 5. ⚙️ 設定タブ（復元完了） -->
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h2>選択肢のカスタマイズ登録</h2>
+
         <div class="input-group">
           <label>出演俳優の追加</label>
           <div class="search-input-wrapper">
             <input type="text" id="add-actor-input" placeholder="例: 小栗旬" onkeypress="handleEnter(event, 'actors')">
             <button type="button" onclick="addMasterItem('actors')">追加</button>
           </div>
+          <div id="setting-actors-list" class="setting-list"></div>
         </div>
+
         <div class="input-group">
           <label>放送局の追加</label>
           <div class="search-input-wrapper">
             <input type="text" id="add-station-input" placeholder="例: TBS" onkeypress="handleEnter(event, 'stations')">
             <button type="button" onclick="addMasterItem('stations')">追加</button>
           </div>
+          <div id="setting-stations-list" class="setting-list"></div>
         </div>
+
+        <div class="input-group">
+          <label>脚本家の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-writer-input" placeholder="例: 三谷幸喜" onkeypress="handleEnter(event, 'writers')">
+            <button type="button" onclick="addMasterItem('writers')">追加</button>
+          </div>
+          <div id="setting-writers-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>監督の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-director-input" placeholder="例: 福田雄一" onkeypress="handleEnter(event, 'directors')">
+            <button type="button" onclick="addMasterItem('directors')">追加</button>
+          </div>
+          <div id="setting-directors-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>配信サービスの追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-service-input" placeholder="例: Netflix" onkeypress="handleEnter(event, 'services')">
+            <button type="button" onclick="addMasterItem('services')">追加</button>
+          </div>
+          <div id="setting-services-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>所要時間の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-duration-input" placeholder="例: 60分" onkeypress="handleEnter(event, 'durations')">
+            <button type="button" onclick="addMasterItem('durations')">追加</button>
+          </div>
+          <div id="setting-durations-list" class="setting-list"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -480,7 +564,7 @@
   </nav>
 
   <script>
-    // Firebaseの設定
+    // Firebase 設定
     const firebaseConfig = {
       apiKey: "AIzaSyB9OS_mGy9_4HDjw96Lm5e8jFNnc521NZs",
       authDomain: "my-drama-app-5ecbb.firebaseapp.com",
@@ -493,6 +577,7 @@
     let db = null;
     let auth = null;
     let currentUser = null;
+    let unsubscribeSync = null;
 
     try {
       firebase.initializeApp(firebaseConfig);
@@ -517,6 +602,9 @@
     let currentSchedules = [];
     let calendarDate = new Date();
 
+    // ----------------------------------------------------
+    // Firebase Auth & リアルタイム同期監視
+    // ----------------------------------------------------
     if (auth) {
       auth.onAuthStateChanged(user => {
         currentUser = user;
@@ -531,8 +619,11 @@
             </div>
           `;
           syncIndicator.innerText = `🟢 クラウド同期中 (${user.displayName})`;
-          loadFromCloud();
+          
+          // クラウドの変更をリアルタイム監視（スマホ ⇔ PC 即時自動同期）
+          listenToCloudChanges();
         } else {
+          if (unsubscribeSync) unsubscribeSync();
           authContainer.innerHTML = `<button class="btn-login" onclick="loginWithGoogle()">Googleでログイン</button>`;
           syncIndicator.innerText = `⚪ オフライン（端末保存）`;
         }
@@ -548,9 +639,11 @@
     }
 
     function logout() {
+      if (unsubscribeSync) unsubscribeSync();
       if (auth) auth.signOut();
     }
 
+    // クラウド保存
     function saveData() {
       localStorage.setItem('drama_master_data', JSON.stringify(masterData));
       localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
@@ -564,22 +657,37 @@
       }
     }
 
-    function loadFromCloud() {
+    // クラウドリアルタイム同期の受信
+    function listenToCloudChanges() {
       if (!currentUser || !db) return;
-      db.collection('users').doc(currentUser.uid).get().then(doc => {
+      
+      if (unsubscribeSync) unsubscribeSync();
+
+      unsubscribeSync = db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
           if (data.dramaList) dramaList = data.dramaList;
           if (data.masterData) masterData = data.masterData;
-          saveData();
+
+          localStorage.setItem('drama_master_data', JSON.stringify(masterData));
+          localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
+
           renderCalendar();
           renderTasks();
           renderHistory();
           renderMasterOptions();
+        } else {
+          // クラウドにデータがまだない場合は初回保存
+          saveData();
         }
+      }, err => {
+        console.error("リアルタイム同期エラー:", err);
       });
     }
 
+    // ----------------------------------------------------
+    // 初期化 ＆ 全般UI処理
+    // ----------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
       renderMasterOptions();
       resetForm();
@@ -664,7 +772,7 @@
 
     function renderSelectedActors() {
       document.getElementById('selected-actors').innerHTML = currentSelectedActors.map(a => `
-        <span class="tag">${a} <span onclick="removeActor('${a}')" style="cursor:pointer;">×</span></span>
+        <span class="tag">${a} <span class="remove" onclick="removeActor('${a}')">×</span></span>
       `).join('');
     }
 
@@ -769,6 +877,12 @@
       document.getElementById('drama-form').reset();
       document.getElementById('edit-id').value = '';
       document.getElementById('form-title').innerText = '新しいドラマ・映画を追加';
+      
+      document.getElementById('station').value = '';
+      document.getElementById('writer').value = '';
+      document.getElementById('director').value = '';
+      document.getElementById('duration').value = '';
+
       currentSelectedActors = [];
       currentSchedules = [];
       renderSelectedActors();
@@ -857,13 +971,11 @@
       const grid = document.getElementById('calendar-grid-cells');
       grid.innerHTML = '';
 
-      // 月曜始まりの計算 (日曜: 0 ➔ 6, 月曜: 1 ➔ 0, 火曜: 2 ➔ 1 ... )
       let firstDay = new Date(year, month, 1).getDay();
       firstDay = (firstDay === 0) ? 6 : firstDay - 1;
 
       const lastDate = new Date(year, month + 1, 0).getDate();
 
-      // 今日の年月日判定用
       const today = new Date();
       const todayYear = today.getFullYear();
       const todayMonth = today.getMonth();
@@ -881,7 +993,6 @@
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
 
-        // 今日かどうかを判定
         const isToday = (year === todayYear && month === todayMonth && date === todayDate);
         if (isToday) {
           cell.classList.add('is-today');
@@ -914,35 +1025,142 @@
     }
 
     function renderHistory() {
-      const container = document.getElementById('history-list');
-      container.innerHTML = '';
-      const completed = dramaList.filter(d => (d.schedules || []).length > 0 && d.schedules[d.schedules.length - 1].status === '視聴済み');
-      if (completed.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--sub-text);">完了した作品はありません。</p>';
+      const alertContainer = document.getElementById('unrated-alert-container');
+      const listContainer = document.getElementById('history-list');
+      const keyword = (document.getElementById('history-search')?.value || '').toLowerCase().trim();
+
+      if (alertContainer) alertContainer.innerHTML = '';
+      if (listContainer) listContainer.innerHTML = '';
+
+      const completedDramas = dramaList.filter(drama => {
+        if (!drama.schedules || drama.schedules.length === 0) return false;
+        const lastEp = drama.schedules[drama.schedules.length - 1];
+        return lastEp.status === '視聴済み';
+      });
+
+      const unrated = completedDramas.filter(d => !d.rating || d.rating === 0);
+      if (unrated.length > 0 && alertContainer) {
+        alertContainer.innerHTML = unrated.map(d => `
+          <div class="alert-box">⚠️ 「<b>${d.title}</b>」の評価がまだ設定されていません。</div>
+        `).join('');
+      }
+
+      const filtered = completedDramas.filter(d => {
+        const matchTitle = d.title.toLowerCase().includes(keyword);
+        const matchStation = (d.station || '').toLowerCase().includes(keyword);
+        const matchActor = (d.actors || []).some(a => a.toLowerCase().includes(keyword));
+        return matchTitle || matchStation || matchActor;
+      });
+
+      if (filtered.length === 0) {
+        if (listContainer) listContainer.innerHTML = '<p style="text-align: center; color: var(--sub-text);">該当する完了ドラマはありません。</p>';
         return;
       }
-      completed.forEach(d => {
+
+      filtered.forEach(drama => {
+        const lastEp = drama.schedules[drama.schedules.length - 1];
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `<div style="font-weight: bold;">🎬 ${d.title}</div>`;
-        container.appendChild(card);
+        card.innerHTML = `
+          <div style="font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--accent);" onclick="toggleHistoryDetail(${drama.id})">
+            🎬 ${drama.title}
+          </div>
+          <div id="history-detail-${drama.id}" style="display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">放送局: ${drama.station || '未指定'}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">出演: ${(drama.actors || []).join(', ') || '未登録'}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 8px;">視聴完了日: ${lastEp.date}</div>
+
+            <div class="input-group">
+              <label>評価 (星5段階)</label>
+              <div class="star-rating" id="stars-${drama.id}">
+                ${[1, 2, 3, 4, 5].map(star => `
+                  <span class="star ${star <= (drama.rating || 0) ? 'active' : ''}" onclick="setRating(${drama.id},${star})">★</span>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>感想・コメント</label>
+              <textarea id="comment-${drama.id}" rows="3" placeholder="感想を入力...">${drama.comment || ''}</textarea>
+            </div>
+
+            <button type="button" onclick="saveHistoryReview(${drama.id})">評価と感想を保存</button>
+          </div>
+        `;
+        if (listContainer) listContainer.appendChild(card);
       });
     }
 
+    function toggleHistoryDetail(id) {
+      const el = document.getElementById(`history-detail-${id}`);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function setRating(dramaId, ratingVal) {
+      const drama = dramaList.find(d => d.id === dramaId);
+      if (drama) {
+        drama.rating = ratingVal;
+        saveData();
+        renderHistory();
+        toggleHistoryDetail(dramaId);
+      }
+    }
+
+    function saveHistoryReview(dramaId) {
+      const drama = dramaList.find(d => d.id === dramaId);
+      if (drama) {
+        drama.comment = document.getElementById(`comment-${dramaId}`).value;
+        saveData();
+        alert('感想を保存しました！');
+        renderHistory();
+      }
+    }
+
+    // ----------------------------------------------------
+    // ⚙️ 設定画面マスター制御 (完全修正版)
+    // ----------------------------------------------------
     function renderMasterOptions() {
       document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
       document.getElementById('writer').innerHTML = `<option value="">指定なし</option>` + masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
       document.getElementById('director').innerHTML = `<option value="">指定なし</option>` + masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
       document.getElementById('duration').innerHTML = `<option value="">指定なし</option>` + masterData.durations.map(d => `<option value="${d}">${d}</option>`).join('');
+      
       document.getElementById('services-checkboxes').innerHTML = masterData.services.map(s => `
         <label class="checkbox-item"><input type="checkbox" class="service-checkbox" value="${s}"> ${s}</label>
+      `).join('');
+
+      renderSettingTags('actors');
+      renderSettingTags('stations');
+      renderSettingTags('writers');
+      renderSettingTags('directors');
+      renderSettingTags('services');
+      renderSettingTags('durations');
+    }
+
+    function renderSettingTags(type) {
+      const container = document.getElementById(`setting-${type}-list`);
+      if (!container) return;
+      container.innerHTML = (masterData[type] || []).map(item => `
+        <div class="setting-item">
+          <span>${item}</span>
+          <span class="delete-btn" onclick="removeMasterItem('${type}', '${item}')">×</span>
+        </div>
       `).join('');
     }
 
     function addMasterItem(type) {
-      const inputEl = document.getElementById(`add-${type.slice(0,-1)}-input`);
+      const singleNames = {
+        actors: 'actor',
+        stations: 'station',
+        writers: 'writer',
+        directors: 'director',
+        services: 'service',
+        durations: 'duration'
+      };
+      const inputEl = document.getElementById(`add-${singleNames[type]}-input`);
       if (!inputEl) return;
       const val = inputEl.value.trim();
+
       if (val && !masterData[type].includes(val)) {
         masterData[type].push(val);
         saveData();
@@ -951,8 +1169,17 @@
       }
     }
 
+    function removeMasterItem(type, item) {
+      masterData[type] = masterData[type].filter(i => i !== item);
+      saveData();
+      renderMasterOptions();
+    }
+
     function handleEnter(e, type) {
-      if (e.key === 'Enter') { e.preventDefault(); addMasterItem(type); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addMasterItem(type);
+      }
     }
   </script>
 </body>
