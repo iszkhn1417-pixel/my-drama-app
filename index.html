@@ -16,7 +16,7 @@
       --header-bg: #f5efe6;
       --unread-red: #d9534f;
     }
-    
+
     * {
       box-sizing: border-box;
     }
@@ -131,10 +131,6 @@
       background-color: #a09e98;
     }
 
-    button.btn-danger {
-      background-color: var(--unread-red);
-    }
-
     /* 検索ボタン付き入力 */
     .search-input-wrapper {
       display: flex;
@@ -206,11 +202,17 @@
     .schedule-item {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 8px;
       background: #faf8f5;
       padding: 8px;
       border-radius: 8px;
+    }
+
+    .schedule-item .ep-label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      min-width: 42px;
     }
 
     .schedule-item input[type="date"] {
@@ -219,6 +221,15 @@
 
     .schedule-item select {
       flex: 1.5;
+    }
+
+    .schedule-item .trash-btn {
+      background: none;
+      border: none;
+      color: #d9534f;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 6px;
     }
 
     /* ボトムナビゲーション */
@@ -443,13 +454,13 @@
           </div>
 
           <div class="input-group">
-            <label>各話スケジュール調整</label>
+            <label>各話スケジュール調整 (🗑️で休止週削除)</label>
             <div id="schedule-container"></div>
           </div>
 
           <div class="btn-group" style="margin-top: 20px;">
             <button type="submit" class="btn-block">保存する</button>
-            <button type="button" class="btn-secondary btn-block" onclick="resetForm()">キャンセル</button>
+            <button type="button" class="btn-secondary btn-block" onclick="resetForm()">リセット</button>
           </div>
         </form>
       </div>
@@ -723,15 +734,14 @@
       `).join('');
     }
 
-    // 話数スケジュール生成
+    // 話数スケジュール自動生成
     function generateSchedules() {
       const count = parseInt(document.getElementById('episode-count').value) || 0;
       const startDateStr = document.getElementById('start-date').value;
-      const container = document.getElementById('schedule-container');
-      container.innerHTML = '';
 
       if (!startDateStr || count <= 0) {
         currentSchedules = [];
+        renderScheduleList();
         return;
       }
 
@@ -756,17 +766,52 @@
       }
     }
 
+    // お休み週の削除（ゴミ箱クリック）
+    function deleteScheduleItem(index) {
+      if (currentSchedules.length <= 1) {
+        alert("これ以上削除できません。");
+        return;
+      }
+
+      // 指定された話数を削除し、話数番号と日付を繰り上げて再計算
+      currentSchedules.splice(index, 1);
+
+      // 話数番号と日付の再割り当て（1週間刻みを維持）
+      const startDateStr = document.getElementById('start-date').value;
+      if (startDateStr) {
+        const baseDate = new Date(startDateStr);
+        currentSchedules.forEach((s, idx) => {
+          s.episode = idx + 1;
+          const epDate = new Date(baseDate);
+          epDate.setDate(baseDate.getDate() + idx * 7);
+          s.date = epDate.toISOString().split('T')[0];
+        });
+      } else {
+        currentSchedules.forEach((s, idx) => {
+          s.episode = idx + 1;
+        });
+      }
+
+      document.getElementById('episode-count').value = currentSchedules.length;
+      renderScheduleList();
+
+      if (currentSchedules.length > 0) {
+        document.getElementById('final-date').value = currentSchedules[currentSchedules.length - 1].date;
+      }
+    }
+
     function renderScheduleList() {
       const container = document.getElementById('schedule-container');
       container.innerHTML = currentSchedules.map((s, index) => `
         <div class="schedule-item">
-          <span>第${s.episode}話</span>
+          <span class="ep-label">${s.episode}話</span>
           <input type="date" value="${s.date}" onchange="updateScheduleDate(${index}, this.value)">
           <select onchange="updateScheduleStatus(${index}, this.value)">
             <option value="視聴前" ${s.status === '視聴前' ? 'selected' : ''}>視聴前</option>
             <option value="視聴中" ${s.status === '視聴中' ? 'selected' : ''}>視聴中</option>
-            <option value="視聴後" ${s.status === '視聴後' ? 'selected' : ''}>視聴後</option>
+            <option value="視聴済み" ${s.status === '視聴済み' ? 'selected' : ''}>視聴済み</option>
           </select>
+          <button type="button" class="trash-btn" onclick="deleteScheduleItem(${index})" title="この週をお休みにする">🗑️</button>
         </div>
       `).join('');
     }
@@ -815,7 +860,7 @@
 
       saveData();
       alert('保存が完了しました！');
-      resetForm();
+      resetForm(); // 保存後にフォームを空欄にリセット
       switchTab('calendar');
     });
 
@@ -828,6 +873,11 @@
       renderSelectedActors();
       document.getElementById('schedule-container').innerHTML = '';
       document.getElementById('day-of-week').innerText = '(曜)';
+
+      // チェックボックスのチェックを解除
+      document.querySelectorAll('.service-checkbox').forEach(cb => {
+        cb.checked = false;
+      });
     }
 
     function editDrama(id) {
@@ -838,12 +888,12 @@
       document.getElementById('form-title').innerText = 'ドラマの編集';
       document.getElementById('edit-id').value = item.id;
       document.getElementById('title').value = item.title;
-      document.getElementById('station').value = item.station;
-      document.getElementById('writer').value = item.writer;
-      document.getElementById('director').value = item.director;
+      document.getElementById('station').value = item.station || '';
+      document.getElementById('writer').value = item.writer || '';
+      document.getElementById('director').value = item.director || '';
       document.getElementById('start-date').value = item.startDate;
       document.getElementById('start-time').value = item.startTime;
-      document.getElementById('duration').value = item.duration;
+      document.getElementById('duration').value = item.duration || '';
       document.getElementById('final-date').value = item.finalDate || '';
       document.getElementById('episode-count').value = item.schedules ? item.schedules.length : '';
 
@@ -878,7 +928,7 @@
           const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
 
           // 放送時間を経過しており、未完了（視聴前／視聴中）のもの
-          if (now >= broadcastTime && sched.status !== '視聴後') {
+          if (now >= broadcastTime && sched.status !== '視聴済み') {
             taskCount++;
             const item = document.createElement('div');
             item.className = 'card';
@@ -911,7 +961,7 @@
     function markAsWatched(dramaId, schedIndex, isChecked) {
       const drama = dramaList.find(d => d.id === dramaId);
       if (drama && drama.schedules[schedIndex]) {
-        drama.schedules[schedIndex].status = isChecked ? '視聴後' : '視聴前';
+        drama.schedules[schedIndex].status = isChecked ? '視聴済み' : '視聴前';
         saveData();
         renderTasks();
       }
@@ -968,7 +1018,7 @@
 
               // 未視聴かつ放送日時を過ぎている場合は赤色ハイライト
               const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
-              if (now >= broadcastTime && sched.status !== '視聴後') {
+              if (now >= broadcastTime && sched.status !== '視聴済み') {
                 ev.classList.add('unread');
               }
 
@@ -993,11 +1043,11 @@
       alertContainer.innerHTML = '';
       listContainer.innerHTML = '';
 
-      // 最終話が「視聴後」になったドラマを完了対象とする
+      // 最終話が「視聴済み」になったドラマを完了対象とする
       const completedDramas = dramaList.filter(drama => {
         if (!drama.schedules || drama.schedules.length === 0) return false;
         const lastEp = drama.schedules[drama.schedules.length - 1];
-        return lastEp.status === '視聴後';
+        return lastEp.status === '視聴済み';
       });
 
       // 未評価アラートの確認
@@ -1030,9 +1080,9 @@
             🎬 ${drama.title}
           </div>
           <div id="history-detail-${drama.id}" style="display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
-            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">放送局: ${drama.station || '未登録'}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">放送局: ${drama.station || '未指定'}</div>
             <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">出演: ${(drama.actors || []).join(', ') || '未登録'}</div>
-            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 8px;">完視聴日: ${lastEp.date}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 8px;">視聴完了日: ${lastEp.date}</div>
 
             <div class="input-group">
               <label>評価 (星5段階)</label>
@@ -1084,11 +1134,11 @@
     // ⚙️ 設定画面の制御
     // ----------------------------------------------------
     function renderMasterOptions() {
-      // 登録フォームのドロップダウン・チェックボックス更新
-      document.getElementById('station').innerHTML = masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
-      document.getElementById('writer').innerHTML = masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
-      document.getElementById('director').innerHTML = masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
-      document.getElementById('duration').innerHTML = masterData.durations.map(d => `<option value="${d}">${d}</option>`).join('');
+      // 登録フォームのドロップダウン・チェックボックス更新（「指定なし」選択肢を追加）
+      document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
+      document.getElementById('writer').innerHTML = `<option value="">指定なし</option>` + masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
+      document.getElementById('director').innerHTML = `<option value="">指定なし</option>` + masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
+      document.getElementById('duration').innerHTML = `<option value="">指定なし</option>` + masterData.durations.map(d => `<option value="${d}">${d}</option>`).join('');
 
       document.getElementById('services-checkboxes').innerHTML = masterData.services.map(s => `
         <label class="checkbox-item">
