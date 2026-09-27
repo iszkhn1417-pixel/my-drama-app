@@ -423,14 +423,15 @@
           <h3 id="calendar-month-title" style="margin: 0;">2026年 10月</h3>
           <button type="button" onclick="changeMonth(1)">次月 ▶</button>
         </div>
+        <!-- 月曜始まりヘッダー -->
         <div class="calendar-grid">
-          <div class="calendar-day-header" style="color:red;">日</div>
           <div class="calendar-day-header">月</div>
           <div class="calendar-day-header">火</div>
           <div class="calendar-day-header">水</div>
           <div class="calendar-day-header">木</div>
           <div class="calendar-day-header">金</div>
           <div class="calendar-day-header" style="color:blue;">土</div>
+          <div class="calendar-day-header" style="color:red;">日</div>
         </div>
         <div id="calendar-grid-cells" class="calendar-grid"></div>
       </div>
@@ -856,7 +857,10 @@
       const grid = document.getElementById('calendar-grid-cells');
       grid.innerHTML = '';
 
-      const firstDay = new Date(year, month, 1).getDay();
+      // 月曜始まりの計算 (日曜: 0 ➔ 6, 月曜: 1 ➔ 0, 火曜: 2 ➔ 1 ... )
+      let firstDay = new Date(year, month, 1).getDay();
+      firstDay = (firstDay === 0) ? 6 : firstDay - 1;
+
       const lastDate = new Date(year, month + 1, 0).getDate();
 
       // 今日の年月日判定用
