@@ -621,6 +621,7 @@
     // ----------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
       renderMasterOptions();
+      resetForm(); // 初回起動時にもフォームを確実に未選択状態（初期値）にリセット
       renderCalendar();
       renderTasks();
       renderHistory();
@@ -773,10 +774,8 @@
         return;
       }
 
-      // 指定された話数を削除し、話数番号と日付を繰り上げて再計算
       currentSchedules.splice(index, 1);
 
-      // 話数番号と日付の再割り当て（1週間刻みを維持）
       const startDateStr = document.getElementById('start-date').value;
       if (startDateStr) {
         const baseDate = new Date(startDateStr);
@@ -860,7 +859,7 @@
 
       saveData();
       alert('保存が完了しました！');
-      resetForm(); // 保存後にフォームを空欄にリセット
+      resetForm();
       switchTab('calendar');
     });
 
@@ -868,13 +867,20 @@
       document.getElementById('drama-form').reset();
       document.getElementById('edit-id').value = '';
       document.getElementById('form-title').innerText = '新しいドラマ・映画を追加';
+      
+      // 各ドロップダウンを明示的に空値（「指定なし」）にリセット
+      document.getElementById('station').value = '';
+      document.getElementById('writer').value = '';
+      document.getElementById('director').value = '';
+      document.getElementById('duration').value = '';
+
       currentSelectedActors = [];
       currentSchedules = [];
       renderSelectedActors();
       document.getElementById('schedule-container').innerHTML = '';
       document.getElementById('day-of-week').innerText = '(曜)';
 
-      // チェックボックスのチェックを解除
+      // チェックボックスの選択解除
       document.querySelectorAll('.service-checkbox').forEach(cb => {
         cb.checked = false;
       });
@@ -924,10 +930,8 @@
         (drama.schedules || []).forEach((sched, index) => {
           if (!sched.date) return;
 
-          // 放送開始日時
           const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
 
-          // 放送時間を経過しており、未完了（視聴前／視聴中）のもの
           if (now >= broadcastTime && sched.status !== '視聴済み') {
             taskCount++;
             const item = document.createElement('div');
@@ -986,7 +990,6 @@
       const firstDay = new Date(year, month, 1).getDay();
       const lastDate = new Date(year, month + 1, 0).getDate();
 
-      // 前月の空白セル
       for (let i = 0; i < firstDay; i++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
@@ -996,7 +999,6 @@
 
       const now = new Date();
 
-      // 当月のセル
       for (let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
@@ -1008,7 +1010,6 @@
 
         const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
 
-        // ドラマのスケジュールを探索
         dramaList.forEach(drama => {
           (drama.schedules || []).forEach(sched => {
             if (sched.date === currentDateStr) {
@@ -1016,7 +1017,6 @@
               ev.className = 'calendar-event';
               ev.innerText = `${drama.title} (${sched.episode}話)`;
 
-              // 未視聴かつ放送日時を過ぎている場合は赤色ハイライト
               const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
               if (now >= broadcastTime && sched.status !== '視聴済み') {
                 ev.classList.add('unread');
@@ -1043,14 +1043,12 @@
       alertContainer.innerHTML = '';
       listContainer.innerHTML = '';
 
-      // 最終話が「視聴済み」になったドラマを完了対象とする
       const completedDramas = dramaList.filter(drama => {
         if (!drama.schedules || drama.schedules.length === 0) return false;
         const lastEp = drama.schedules[drama.schedules.length - 1];
         return lastEp.status === '視聴済み';
       });
 
-      // 未評価アラートの確認
       const unrated = completedDramas.filter(d => !d.rating || d.rating === 0);
       if (unrated.length > 0) {
         alertContainer.innerHTML = unrated.map(d => `
@@ -1058,7 +1056,6 @@
         `).join('');
       }
 
-      // 検索フィルター (作品名・放送局・出演俳優のあいまい検索)
       const filtered = completedDramas.filter(d => {
         const matchTitle = d.title.toLowerCase().includes(keyword);
         const matchStation = (d.station || '').toLowerCase().includes(keyword);
@@ -1134,7 +1131,7 @@
     // ⚙️ 設定画面の制御
     // ----------------------------------------------------
     function renderMasterOptions() {
-      // 登録フォームのドロップダウン・チェックボックス更新（「指定なし」選択肢を追加）
+      // 最初の選択肢に「指定なし（value=""）」を設定
       document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
       document.getElementById('writer').innerHTML = `<option value="">指定なし</option>` + masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
       document.getElementById('director').innerHTML = `<option value="">指定なし</option>` + masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
@@ -1146,7 +1143,6 @@
         </label>
       `).join('');
 
-      // 設定画面のタグリスト表示
       renderSettingTags('actors');
       renderSettingTags('stations');
       renderSettingTags('writers');
@@ -1183,6 +1179,7 @@
         masterData[type].push(val);
         saveData();
         renderMasterOptions();
+        resetForm();
         inputEl.value = '';
       }
     }
@@ -1191,6 +1188,7 @@
       masterData[type] = masterData[type].filter(i => i !== item);
       saveData();
       renderMasterOptions();
+      resetForm();
     }
 
     function handleEnter(e, type) {
