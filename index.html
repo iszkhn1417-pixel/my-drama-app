@@ -21,6 +21,8 @@
       --border: #e8e2d5;
       --header-bg: #f5efe6;
       --unread-red: #d9534f;
+      --today-bg: #fff9e6;
+      --today-accent: #e67e22;
     }
 
     * { box-sizing: border-box; }
@@ -82,8 +84,9 @@
       cursor: pointer;
     }
 
+    /* 画面の幅を広げて余白を有効活用 */
     .container {
-      max-width: 600px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 16px;
     }
@@ -235,29 +238,53 @@
 
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-    .calendar-day-header { font-size: 0.8rem; font-weight: bold; color: var(--sub-text); padding: 4px 0; }
+    .calendar-day-header { font-size: 0.85rem; font-weight: bold; color: var(--sub-text); padding: 6px 0; }
 
+    /* カレンダーマスの拡大（PC/大きな画面用） */
     .calendar-cell {
-      min-height: 65px;
+      min-height: 110px;
       background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 2px;
+      padding: 4px;
       font-size: 0.75rem;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: background-color 0.2s;
     }
 
-    .calendar-date-num { font-size: 0.75rem; font-weight: bold; color: #555; margin-bottom: 2px; }
+    /* 今日の日付の特別デザイン */
+    .calendar-cell.is-today {
+      background-color: var(--today-bg) !important;
+      border: 2px solid var(--today-accent) !important;
+    }
+
+    .calendar-date-num {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 4px;
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      border-radius: 50%;
+    }
+
+    .calendar-cell.is-today .calendar-date-num {
+      background-color: var(--today-accent);
+      color: #ffffff;
+    }
 
     .calendar-event {
       background-color: #f0e8db;
       color: var(--text);
       border-radius: 4px;
-      padding: 2px 4px;
-      margin-top: 2px;
-      font-size: 0.68rem;
+      padding: 3px 6px;
+      margin-top: 3px;
+      font-size: 0.72rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -265,6 +292,17 @@
     }
 
     .calendar-event.unread { background-color: var(--unread-red); color: white; }
+
+    /* スマホ等画面が狭い場合調整 */
+    @media (max-width: 600px) {
+      .calendar-cell {
+        min-height: 75px;
+      }
+      .calendar-event {
+        font-size: 0.65rem;
+        padding: 2px 3px;
+      }
+    }
 
     .sync-status {
       font-size: 0.75rem;
@@ -821,6 +859,12 @@
       const firstDay = new Date(year, month, 1).getDay();
       const lastDate = new Date(year, month + 1, 0).getDate();
 
+      // 今日の年月日判定用
+      const today = new Date();
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth();
+      const todayDate = today.getDate();
+
       for (let i = 0; i < firstDay; i++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
@@ -832,6 +876,13 @@
       for (let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
+
+        // 今日かどうかを判定
+        const isToday = (year === todayYear && month === todayMonth && date === todayDate);
+        if (isToday) {
+          cell.classList.add('is-today');
+        }
+
         const dateNum = document.createElement('div');
         dateNum.className = 'calendar-date-num';
         dateNum.innerText = date;
