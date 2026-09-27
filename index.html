@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ドラマ・映画 視聴管理</title>
+
+  <!-- Firebase SDK の読み込み -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg: #fdfbf7;
@@ -17,9 +23,7 @@
       --unread-red: #d9534f;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -31,14 +35,51 @@
 
     header {
       background-color: var(--header-bg);
-      padding: 14px 16px;
-      text-align: center;
-      font-size: 1.1rem;
-      font-weight: bold;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 100;
+    }
+
+    header h1 {
+      font-size: 1.0rem;
+      margin: 0;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .btn-login {
+      background-color: #4285f4;
+      color: white;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-logout {
+      background-color: #a09e98;
+      color: white;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
     }
 
     .container {
@@ -47,15 +88,9 @@
       padding: 16px;
     }
 
-    /* タブ切り替え制御 */
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    /* カード・フォームスタイル */
     .card {
       background-color: var(--card-bg);
       border-radius: 12px;
@@ -74,9 +109,7 @@
       margin-bottom: 16px;
     }
 
-    .input-group {
-      margin-bottom: 14px;
-    }
+    .input-group { margin-bottom: 14px; }
 
     label {
       display: block;
@@ -96,16 +129,7 @@
       font-size: 0.95rem;
     }
 
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      background-color: #ffffff;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 8px;
-    }
+    .btn-group { display: flex; gap: 8px; }
 
     button {
       padding: 10px 16px;
@@ -116,28 +140,13 @@
       font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s;
     }
 
-    button:hover {
-      background-color: var(--accent-hover);
-    }
+    button.btn-block { width: 100%; }
+    button.btn-secondary { background-color: #a09e98; }
 
-    button.btn-block {
-      width: 100%;
-    }
+    .search-input-wrapper { display: flex; gap: 8px; }
 
-    button.btn-secondary {
-      background-color: #a09e98;
-    }
-
-    /* 検索ボタン付き入力 */
-    .search-input-wrapper {
-      display: flex;
-      gap: 8px;
-    }
-
-    /* あいまい候補表示 */
     .suggestions {
       border: 1px solid var(--border);
       background: white;
@@ -147,22 +156,10 @@
       margin-top: 4px;
     }
 
-    .suggestion-item {
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
+    .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
+    .suggestion-item:hover { background-color: #f5efe6; }
 
-    .suggestion-item:hover {
-      background-color: #f5efe6;
-    }
-
-    .selected-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
+    .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
     .tag {
       background-color: #f0e8db;
@@ -174,13 +171,6 @@
       gap: 6px;
     }
 
-    .tag .remove {
-      cursor: pointer;
-      color: #999;
-      font-weight: bold;
-    }
-
-    /* 複数チェックボックスリスト */
     .checkbox-group {
       display: flex;
       flex-wrap: wrap;
@@ -191,14 +181,8 @@
       border: 1px solid var(--border);
     }
 
-    .checkbox-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.9rem;
-    }
+    .checkbox-item { display: flex; align-items: center; gap: 4px; font-size: 0.9rem; }
 
-    /* スケジュール編集リスト */
     .schedule-item {
       display: flex;
       align-items: center;
@@ -209,37 +193,23 @@
       border-radius: 8px;
     }
 
-    .schedule-item .ep-label {
-      font-size: 0.85rem;
-      font-weight: bold;
-      min-width: 42px;
-    }
-
-    .schedule-item input[type="date"] {
-      flex: 2;
-    }
-
-    .schedule-item select {
-      flex: 1.5;
-    }
+    .schedule-item .ep-label { font-size: 0.85rem; font-weight: bold; min-width: 42px; }
+    .schedule-item input[type="date"] { flex: 2; }
+    .schedule-item select { flex: 1.5; }
 
     .schedule-item .skip-btn {
-      background: none;
+      background: #ffffff;
       border: 1px solid var(--border);
-      background-color: #ffffff;
       border-radius: 6px;
       font-size: 0.85rem;
-      cursor: pointer;
       padding: 6px 8px;
       white-space: nowrap;
+      cursor: pointer;
     }
 
-    /* ボトムナビゲーション */
     .bottom-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       height: 60px;
       background-color: #ffffff;
       border-top: 1px solid var(--border);
@@ -247,7 +217,6 @@
       justify-content: space-around;
       align-items: center;
       z-index: 1000;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
     }
 
     .nav-item {
@@ -257,43 +226,16 @@
       align-items: center;
       justify-content: center;
       height: 100%;
-      text-decoration: none;
       color: var(--sub-text);
       font-size: 0.75rem;
       cursor: pointer;
     }
 
-    .nav-item .icon {
-      font-size: 1.2rem;
-      margin-bottom: 2px;
-    }
+    .nav-item.active { color: var(--accent); font-weight: bold; }
 
-    .nav-item.active {
-      color: var(--accent);
-      font-weight: bold;
-    }
-
-    /* カレンダー表示 */
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      text-align: center;
-    }
-
-    .calendar-day-header {
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: var(--sub-text);
-      padding: 4px 0;
-    }
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .calendar-day-header { font-size: 0.8rem; font-weight: bold; color: var(--sub-text); padding: 4px 0; }
 
     .calendar-cell {
       min-height: 65px;
@@ -304,16 +246,10 @@
       font-size: 0.75rem;
       display: flex;
       flex-direction: column;
-      align-items: stretch;
       overflow: hidden;
     }
 
-    .calendar-date-num {
-      font-size: 0.75rem;
-      font-weight: bold;
-      color: #555;
-      margin-bottom: 2px;
-    }
+    .calendar-date-num { font-size: 0.75rem; font-weight: bold; color: #555; margin-bottom: 2px; }
 
     .calendar-event {
       background-color: #f0e8db;
@@ -322,68 +258,33 @@
       padding: 2px 4px;
       margin-top: 2px;
       font-size: 0.68rem;
-      text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
       cursor: pointer;
     }
 
-    .calendar-event.unread {
-      background-color: var(--unread-red);
-      color: white;
-    }
+    .calendar-event.unread { background-color: var(--unread-red); color: white; }
 
-    /* 警告アラート */
-    .alert-box {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 0.9rem;
-    }
-
-    /* 星評価 */
-    .star-rating {
-      font-size: 1.4rem;
-      color: #ccc;
-      cursor: pointer;
-    }
-    .star-rating .star.active {
-      color: #f39c12;
-    }
-
-    .setting-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .setting-item {
-      background: #faf8f5;
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .setting-item .delete-btn {
-      color: #999;
-      cursor: pointer;
-      font-weight: bold;
+    .sync-status {
+      font-size: 0.75rem;
+      color: #888;
+      text-align: right;
+      margin-bottom: 8px;
     }
   </style>
 </head>
 <body>
 
-  <header id="header-title">📅 カレンダー</header>
+  <header>
+    <h1 id="header-title">📅 カレンダー</h1>
+    <div id="auth-container">
+      <button class="btn-login" onclick="loginWithGoogle()">Googleでログイン</button>
+    </div>
+  </header>
 
   <div class="container">
+    <div id="sync-indicator" class="sync-status">オフライン（端末に保存中）</div>
 
     <!-- 1. 📝 登録タブ -->
     <div id="tab-register" class="tab-content">
@@ -499,13 +400,10 @@
 
     <!-- 4. ★ 履歴タブ -->
     <div id="tab-history" class="tab-content">
-      <div id="unrated-alert-container"></div>
-      
       <div class="card">
         <h2>完了作品の検索</h2>
         <input type="text" id="history-search" placeholder="🔍 タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
       </div>
-
       <div class="card">
         <h2>視聴完了リスト</h2>
         <div id="history-list"></div>
@@ -516,93 +414,55 @@
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h2>選択肢のカスタマイズ登録</h2>
-
         <div class="input-group">
           <label>出演俳優の追加</label>
           <div class="search-input-wrapper">
             <input type="text" id="add-actor-input" placeholder="例: 小栗旬" onkeypress="handleEnter(event, 'actors')">
             <button type="button" onclick="addMasterItem('actors')">追加</button>
           </div>
-          <div id="setting-actors-list" class="setting-list"></div>
         </div>
-
         <div class="input-group">
           <label>放送局の追加</label>
           <div class="search-input-wrapper">
             <input type="text" id="add-station-input" placeholder="例: TBS" onkeypress="handleEnter(event, 'stations')">
             <button type="button" onclick="addMasterItem('stations')">追加</button>
           </div>
-          <div id="setting-stations-list" class="setting-list"></div>
-        </div>
-
-        <div class="input-group">
-          <label>脚本家の追加</label>
-          <div class="search-input-wrapper">
-            <input type="text" id="add-writer-input" placeholder="例: 三谷幸喜" onkeypress="handleEnter(event, 'writers')">
-            <button type="button" onclick="addMasterItem('writers')">追加</button>
-          </div>
-          <div id="setting-writers-list" class="setting-list"></div>
-        </div>
-
-        <div class="input-group">
-          <label>監督の追加</label>
-          <div class="search-input-wrapper">
-            <input type="text" id="add-director-input" placeholder="例: 福田雄一" onkeypress="handleEnter(event, 'directors')">
-            <button type="button" onclick="addMasterItem('directors')">追加</button>
-          </div>
-          <div id="setting-directors-list" class="setting-list"></div>
-        </div>
-
-        <div class="input-group">
-          <label>配信サービスの追加</label>
-          <div class="search-input-wrapper">
-            <input type="text" id="add-service-input" placeholder="例: Netflix" onkeypress="handleEnter(event, 'services')">
-            <button type="button" onclick="addMasterItem('services')">追加</button>
-          </div>
-          <div id="setting-services-list" class="setting-list"></div>
-        </div>
-
-        <div class="input-group">
-          <label>所要時間の追加</label>
-          <div class="search-input-wrapper">
-            <input type="text" id="add-duration-input" placeholder="例: 60分" onkeypress="handleEnter(event, 'durations')">
-            <button type="button" onclick="addMasterItem('durations')">追加</button>
-          </div>
-          <div id="setting-durations-list" class="setting-list"></div>
         </div>
       </div>
     </div>
-
   </div>
 
-  <!-- ボトムナビゲーションバー -->
   <nav class="bottom-nav">
-    <div class="nav-item" onclick="switchTab('register')">
-      <div class="icon">📝</div>
-      <div>登録</div>
-    </div>
-    <div class="nav-item" onclick="switchTab('tasks')">
-      <div class="icon">✅</div>
-      <div>タスク</div>
-    </div>
-    <div class="nav-item active" onclick="switchTab('calendar')">
-      <div class="icon">📅</div>
-      <div>カレンダー</div>
-    </div>
-    <div class="nav-item" onclick="switchTab('history')">
-      <div class="icon">★</div>
-      <div>履歴</div>
-    </div>
-    <div class="nav-item" onclick="switchTab('settings')">
-      <div class="icon">⚙️</div>
-      <div>設定</div>
-    </div>
+    <div class="nav-item" onclick="switchTab('register')"><div>📝</div><div>登録</div></div>
+    <div class="nav-item" onclick="switchTab('tasks')"><div>✅</div><div>タスク</div></div>
+    <div class="nav-item active" onclick="switchTab('calendar')"><div>📅</div><div>カレンダー</div></div>
+    <div class="nav-item" onclick="switchTab('history')"><div>★</div><div>履歴</div></div>
+    <div class="nav-item" onclick="switchTab('settings')"><div>⚙️</div><div>設定</div></div>
   </nav>
 
   <script>
-    // ----------------------------------------------------
-    // 初期設定 & ローカルストレージ
-    // ----------------------------------------------------
+    // Firebaseの設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9OS_mGy9_4HDjw96Lm5e8jFNnc521NZs",
+      authDomain: "my-drama-app-5ecbb.firebaseapp.com",
+      projectId: "my-drama-app-5ecbb",
+      storageBucket: "my-drama-app-5ecbb.firebasestorage.app",
+      messagingSenderId: "1084781881966",
+      appId: "1:1084781881966:web:bd7f192d45af26e724d47f"
+    };
+
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+    } catch(e) {
+      console.log("Firebase連携エラー:", e);
+    }
+
     const defaultMaster = {
       actors: ["堺雅人", "阿部寛", "二宮和也", "長澤まさみ", "新垣結衣", "小栗旬"],
       stations: ["TBS", "フジテレビ", "日本テレビ", "テレビ朝日", "テレビ東京", "NHK"],
@@ -618,9 +478,69 @@
     let currentSchedules = [];
     let calendarDate = new Date();
 
-    // ----------------------------------------------------
-    // 画面初期化
-    // ----------------------------------------------------
+    if (auth) {
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        const authContainer = document.getElementById('auth-container');
+        const syncIndicator = document.getElementById('sync-indicator');
+
+        if (user) {
+          authContainer.innerHTML = `
+            <div class="user-profile">
+              <img src="${user.photoURL}" class="user-avatar" title="${user.displayName}">
+              <button class="btn-logout" onclick="logout()">ログアウト</button>
+            </div>
+          `;
+          syncIndicator.innerText = `🟢 クラウド同期中 (${user.displayName})`;
+          loadFromCloud();
+        } else {
+          authContainer.innerHTML = `<button class="btn-login" onclick="loginWithGoogle()">Googleでログイン</button>`;
+          syncIndicator.innerText = `⚪ オフライン（端末保存）`;
+        }
+      });
+    }
+
+    function loginWithGoogle() {
+      if (!auth) return;
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(error => {
+        alert("ログインに失敗しました: " + error.message);
+      });
+    }
+
+    function logout() {
+      if (auth) auth.signOut();
+    }
+
+    function saveData() {
+      localStorage.setItem('drama_master_data', JSON.stringify(masterData));
+      localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
+
+      if (currentUser && db) {
+        db.collection('users').doc(currentUser.uid).set({
+          masterData: masterData,
+          dramaList: dramaList,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(err => console.error("クラウド保存エラー:", err));
+      }
+    }
+
+    function loadFromCloud() {
+      if (!currentUser || !db) return;
+      db.collection('users').doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.dramaList) dramaList = data.dramaList;
+          if (data.masterData) masterData = data.masterData;
+          saveData();
+          renderCalendar();
+          renderTasks();
+          renderHistory();
+          renderMasterOptions();
+        }
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       renderMasterOptions();
       resetForm();
@@ -629,14 +549,6 @@
       renderHistory();
     });
 
-    function saveData() {
-      localStorage.setItem('drama_master_data', JSON.stringify(masterData));
-      localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
-    }
-
-    // ----------------------------------------------------
-    // タブ切り替え
-    // ----------------------------------------------------
     function switchTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -655,56 +567,37 @@
 
       const navIndices = { register: 0, tasks: 1, calendar: 2, history: 3, settings: 4 };
       const navItems = document.querySelectorAll('.nav-item');
-      if (navItems[navIndices[tabName]]) {
-        navItems[navIndices[tabName]].classList.add('active');
-      }
+      if (navItems[navIndices[tabName]]) navItems[navIndices[tabName]].classList.add('active');
 
       if (tabName === 'calendar') renderCalendar();
       if (tabName === 'tasks') renderTasks();
       if (tabName === 'history') renderHistory();
     }
 
-    // ----------------------------------------------------
-    // 登録画面の制御
-    // ----------------------------------------------------
     function searchNetWork() {
       const title = document.getElementById('title').value.trim();
-      if (!title) {
-        alert("ドラマ名を入力してから検索ボタンを押してください。");
-        return;
-      }
-      const url = `https://www.google.com/search?q=${encodeURIComponent('ドラマ ' + title)}`;
-      window.open(url, '_blank');
+      if (!title) return alert("ドラマ名を入力してください。");
+      window.open(`https://www.google.com/search?q=${encodeURIComponent('ドラマ ' + title)}`, '_blank');
     }
 
     function updateDayOfWeek() {
       const dateVal = document.getElementById('start-date').value;
       if (!dateVal) return;
       const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
-      const d = new Date(dateVal);
-      document.getElementById('day-of-week').innerText = days[d.getDay()];
+      document.getElementById('day-of-week').innerText = days[new Date(dateVal).getDay()];
       if (currentSchedules.length === 0) generateSchedules();
     }
 
-    // あいまい俳優検索
     function filterActors() {
       const input = document.getElementById('actor-input').value.toLowerCase().trim();
       const container = document.getElementById('actor-suggestions');
       container.innerHTML = '';
-
-      if (!input) {
-        container.style.display = 'none';
-        return;
-      }
+      if (!input) return container.style.display = 'none';
 
       const filtered = masterData.actors.filter(actor => 
         actor.toLowerCase().includes(input) && !currentSelectedActors.includes(actor)
       );
-
-      if (filtered.length === 0) {
-        container.style.display = 'none';
-        return;
-      }
+      if (filtered.length === 0) return container.style.display = 'none';
 
       filtered.forEach(actor => {
         const div = document.createElement('div');
@@ -731,22 +624,15 @@
     }
 
     function renderSelectedActors() {
-      const container = document.getElementById('selected-actors');
-      container.innerHTML = currentSelectedActors.map(a => `
-        <span class="tag">${a} <span class="remove" onclick="removeActor('${a}')">×</span></span>
+      document.getElementById('selected-actors').innerHTML = currentSelectedActors.map(a => `
+        <span class="tag">${a} <span onclick="removeActor('${a}')" style="cursor:pointer;">×</span></span>
       `).join('');
     }
 
-    // 話数スケジュール自動生成
     function generateSchedules() {
       const count = parseInt(document.getElementById('episode-count').value) || 0;
       const startDateStr = document.getElementById('start-date').value;
-
-      if (!startDateStr || count <= 0) {
-        currentSchedules = [];
-        renderScheduleList();
-        return;
-      }
+      if (!startDateStr || count <= 0) return;
 
       const baseDate = new Date(startDateStr);
       currentSchedules = [];
@@ -754,22 +640,18 @@
       for (let i = 1; i <= count; i++) {
         const epDate = new Date(baseDate);
         epDate.setDate(baseDate.getDate() + (i - 1) * 7);
-        const dateString = epDate.toISOString().split('T')[0];
-
         currentSchedules.push({
           episode: i,
-          date: dateString,
+          date: epDate.toISOString().split('T')[0],
           status: "視聴前"
         });
       }
-
       renderScheduleList();
       if (currentSchedules.length > 0) {
         document.getElementById('final-date').value = currentSchedules[currentSchedules.length - 1].date;
       }
     }
 
-    // ★ 繰り越し機能（指定した話数以降の日付をすべて1週間遅らせる）
     function delayScheduleFrom(index) {
       for (let i = index; i < currentSchedules.length; i++) {
         if (currentSchedules[i].date) {
@@ -778,9 +660,7 @@
           currentSchedules[i].date = d.toISOString().split('T')[0];
         }
       }
-
       renderScheduleList();
-
       if (currentSchedules.length > 0) {
         document.getElementById('final-date').value = currentSchedules[currentSchedules.length - 1].date;
       }
@@ -797,26 +677,22 @@
             <option value="視聴中" ${s.status === '視聴中' ? 'selected' : ''}>視聴中</option>
             <option value="視聴済み" ${s.status === '視聴済み' ? 'selected' : ''}>視聴済み</option>
           </select>
-          <button type="button" class="skip-btn" onclick="delayScheduleFrom(${index})" title="特番等でこの週を休止し、以降を1週繰り越す">⏭️ 休止</button>
+          <button type="button" class="skip-btn" onclick="delayScheduleFrom(${index})" title="特番等でこの週を休止し繰り越す">⏭️ 休止</button>
         </div>
       `).join('');
     }
 
     function updateScheduleDate(index, val) {
       currentSchedules[index].date = val;
-      if (index === currentSchedules.length - 1) {
-        document.getElementById('final-date').value = val;
-      }
+      if (index === currentSchedules.length - 1) document.getElementById('final-date').value = val;
     }
 
     function updateScheduleStatus(index, val) {
       currentSchedules[index].status = val;
     }
 
-    // フォーム保存
     document.getElementById('drama-form').addEventListener('submit', (e) => {
       e.preventDefault();
-
       const editId = document.getElementById('edit-id').value;
       const selectedServices = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => cb.value);
 
@@ -854,21 +730,12 @@
       document.getElementById('drama-form').reset();
       document.getElementById('edit-id').value = '';
       document.getElementById('form-title').innerText = '新しいドラマ・映画を追加';
-      
-      document.getElementById('station').value = '';
-      document.getElementById('writer').value = '';
-      document.getElementById('director').value = '';
-      document.getElementById('duration').value = '';
-
       currentSelectedActors = [];
       currentSchedules = [];
       renderSelectedActors();
       document.getElementById('schedule-container').innerHTML = '';
       document.getElementById('day-of-week').innerText = '(曜)';
-
-      document.querySelectorAll('.service-checkbox').forEach(cb => {
-        cb.checked = false;
-      });
+      document.querySelectorAll('.service-checkbox').forEach(cb => cb.checked = false);
     }
 
     function editDrama(id) {
@@ -890,50 +757,36 @@
 
       currentSelectedActors = item.actors || [];
       renderSelectedActors();
-
       currentSchedules = item.schedules || [];
       renderScheduleList();
 
       document.querySelectorAll('.service-checkbox').forEach(cb => {
         cb.checked = (item.services || []).includes(cb.value);
       });
-
       updateDayOfWeek();
     }
 
-    // ----------------------------------------------------
-    // ✅ タスク画面の制御
-    // ----------------------------------------------------
     function renderTasks() {
       const container = document.getElementById('task-list');
       container.innerHTML = '';
-
       const now = new Date();
-      let taskCount = 0;
+      let count = 0;
 
       dramaList.forEach(drama => {
         (drama.schedules || []).forEach((sched, index) => {
           if (!sched.date) return;
-
           const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
-
           if (now >= broadcastTime && sched.status !== '視聴済み') {
-            taskCount++;
+            count++;
             const item = document.createElement('div');
             item.className = 'card';
             item.style.marginBottom = '8px';
             item.innerHTML = `
-              <div style="display: flex; align-items: flex-start; gap: 10px;">
-                <input type="checkbox" style="width: 20px; height: 20px; margin-top: 4px;" 
-                  onchange="markAsWatched(${drama.id}, ${index}, this.checked)">
+              <div style="display: flex; gap: 10px;">
+                <input type="checkbox" style="width: 20px; height: 20px;" onchange="markAsWatched(${drama.id}, ${index}, this.checked)">
                 <div>
-                  <div style="font-weight: bold; font-size: 1rem;">${drama.title} (第${sched.episode}話)</div>
-                  <div style="font-size: 0.85rem; color: var(--sub-text); margin-top: 2px;">
-                    📅 放送日時: ${sched.date} ${drama.startTime || ''}
-                  </div>
-                  <div style="font-size: 0.85rem; color: var(--sub-text);">
-                    📺 配信: ${(drama.services || []).join(', ') || '指定なし'}
-                  </div>
+                  <div style="font-weight: bold;">${drama.title} (第${sched.episode}話)</div>
+                  <div style="font-size: 0.85rem; color: var(--sub-text);">📅 ${sched.date} ${drama.startTime || ''}</div>
                 </div>
               </div>
             `;
@@ -941,10 +794,7 @@
           }
         });
       });
-
-      if (taskCount === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--sub-text);">未視聴のタスクはありません！✨</p>';
-      }
+      if (count === 0) container.innerHTML = '<p style="text-align: center; color: var(--sub-text);">未視聴のタスクはありません！✨</p>';
     }
 
     function markAsWatched(dramaId, schedIndex, isChecked) {
@@ -956,9 +806,6 @@
       }
     }
 
-    // ----------------------------------------------------
-    // 📅 カレンダー画面の制御
-    // ----------------------------------------------------
     function changeMonth(diff) {
       calendarDate.setMonth(calendarDate.getMonth() + diff);
       renderCalendar();
@@ -968,7 +815,6 @@
       const year = calendarDate.getFullYear();
       const month = calendarDate.getMonth();
       document.getElementById('calendar-month-title').innerText = `${year}年 ${month + 1}月`;
-
       const grid = document.getElementById('calendar-grid-cells');
       grid.innerHTML = '';
 
@@ -983,11 +829,9 @@
       }
 
       const now = new Date();
-
       for (let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
-
         const dateNum = document.createElement('div');
         dateNum.className = 'calendar-date-num';
         dateNum.innerText = date;
@@ -1001,185 +845,59 @@
               const ev = document.createElement('div');
               ev.className = 'calendar-event';
               ev.innerText = `${drama.title} (${sched.episode}話)`;
-
               const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
               if (now >= broadcastTime && sched.status !== '視聴済み') {
                 ev.classList.add('unread');
               }
-
               ev.onclick = () => editDrama(drama.id);
               cell.appendChild(ev);
             }
           });
         });
-
         grid.appendChild(cell);
       }
     }
 
-    // ----------------------------------------------------
-    // ★ 履歴画面の制御
-    // ----------------------------------------------------
     function renderHistory() {
-      const alertContainer = document.getElementById('unrated-alert-container');
-      const listContainer = document.getElementById('history-list');
-      const keyword = document.getElementById('history-search').value.toLowerCase().trim();
-
-      alertContainer.innerHTML = '';
-      listContainer.innerHTML = '';
-
-      const completedDramas = dramaList.filter(drama => {
-        if (!drama.schedules || drama.schedules.length === 0) return false;
-        const lastEp = drama.schedules[drama.schedules.length - 1];
-        return lastEp.status === '視聴済み';
-      });
-
-      const unrated = completedDramas.filter(d => !d.rating || d.rating === 0);
-      if (unrated.length > 0) {
-        alertContainer.innerHTML = unrated.map(d => `
-          <div class="alert-box">⚠️ 「<b>${d.title}</b>」の評価がまだ設定されていません。</div>
-        `).join('');
-      }
-
-      const filtered = completedDramas.filter(d => {
-        const matchTitle = d.title.toLowerCase().includes(keyword);
-        const matchStation = (d.station || '').toLowerCase().includes(keyword);
-        const matchActor = (d.actors || []).some(a => a.toLowerCase().includes(keyword));
-        return matchTitle || matchStation || matchActor;
-      });
-
-      if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="text-align: center; color: var(--sub-text);">該当する完了ドラマはありません。</p>';
+      const container = document.getElementById('history-list');
+      container.innerHTML = '';
+      const completed = dramaList.filter(d => (d.schedules || []).length > 0 && d.schedules[d.schedules.length - 1].status === '視聴済み');
+      if (completed.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--sub-text);">完了した作品はありません。</p>';
         return;
       }
-
-      filtered.forEach(drama => {
-        const lastEp = drama.schedules[drama.schedules.length - 1];
+      completed.forEach(d => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
-          <div style="font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--accent);" onclick="toggleHistoryDetail(${drama.id})">
-            🎬 ${drama.title}
-          </div>
-          <div id="history-detail-${drama.id}" style="display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
-            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">放送局: ${drama.station || '未指定'}</div>
-            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">出演: ${(drama.actors || []).join(', ') || '未登録'}</div>
-            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 8px;">視聴完了日: ${lastEp.date}</div>
-
-            <div class="input-group">
-              <label>評価 (星5段階)</label>
-              <div class="star-rating" id="stars-${drama.id}">
-                ${[1, 2, 3, 4, 5].map(star => `
-                  <span class="star ${star <= (drama.rating || 0) ? 'active' : ''}" onclick="setRating(${drama.id},${star})">★</span>
-                `).join('')}
-              </div>
-            </div>
-
-            <div class="input-group">
-              <label>感想・コメント</label>
-              <textarea id="comment-${drama.id}" rows="3" placeholder="感想を入力...">${drama.comment || ''}</textarea>
-            </div>
-
-            <button type="button" onclick="saveHistoryReview(${drama.id})">評価と感想を保存</button>
-          </div>
-        `;
-        listContainer.appendChild(card);
+        card.innerHTML = `<div style="font-weight: bold;">🎬 ${d.title}</div>`;
+        container.appendChild(card);
       });
     }
 
-    function toggleHistoryDetail(id) {
-      const el = document.getElementById(`history-detail-${id}`);
-      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function setRating(dramaId, ratingVal) {
-      const drama = dramaList.find(d => d.id === dramaId);
-      if (drama) {
-        drama.rating = ratingVal;
-        saveData();
-        renderHistory();
-        toggleHistoryDetail(dramaId);
-      }
-    }
-
-    function saveHistoryReview(dramaId) {
-      const drama = dramaList.find(d => d.id === dramaId);
-      if (drama) {
-        drama.comment = document.getElementById(`comment-${dramaId}`).value;
-        saveData();
-        alert('感想を保存しました！');
-        renderHistory();
-      }
-    }
-
-    // ----------------------------------------------------
-    // ⚙️ 設定画面の制御
-    // ----------------------------------------------------
     function renderMasterOptions() {
       document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
       document.getElementById('writer').innerHTML = `<option value="">指定なし</option>` + masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
       document.getElementById('director').innerHTML = `<option value="">指定なし</option>` + masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
       document.getElementById('duration').innerHTML = `<option value="">指定なし</option>` + masterData.durations.map(d => `<option value="${d}">${d}</option>`).join('');
-
       document.getElementById('services-checkboxes').innerHTML = masterData.services.map(s => `
-        <label class="checkbox-item">
-          <input type="checkbox" class="service-checkbox" value="${s}"> ${s}
-        </label>
-      `).join('');
-
-      renderSettingTags('actors');
-      renderSettingTags('stations');
-      renderSettingTags('writers');
-      renderSettingTags('directors');
-      renderSettingTags('services');
-      renderSettingTags('durations');
-    }
-
-    function renderSettingTags(type) {
-      const container = document.getElementById(`setting-${type}-list`);
-      if (!container) return;
-      container.innerHTML = masterData[type].map(item => `
-        <div class="setting-item">
-          <span>${item}</span>
-          <span class="delete-btn" onclick="removeMasterItem('${type}', '${item}')">×</span>
-        </div>
+        <label class="checkbox-item"><input type="checkbox" class="service-checkbox" value="${s}"> ${s}</label>
       `).join('');
     }
 
     function addMasterItem(type) {
-      const singleNames = {
-        actors: 'actor',
-        stations: 'station',
-        writers: 'writer',
-        directors: 'director',
-        services: 'service',
-        durations: 'duration'
-      };
-      const inputEl = document.getElementById(`add-${singleNames[type]}-input`);
+      const inputEl = document.getElementById(`add-${type.slice(0,-1)}-input`);
       if (!inputEl) return;
       const val = inputEl.value.trim();
-
       if (val && !masterData[type].includes(val)) {
         masterData[type].push(val);
         saveData();
         renderMasterOptions();
-        resetForm();
         inputEl.value = '';
       }
     }
 
-    function removeMasterItem(type, item) {
-      masterData[type] = masterData[type].filter(i => i !== item);
-      saveData();
-      renderMasterOptions();
-      resetForm();
-    }
-
     function handleEnter(e, type) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addMasterItem(type);
-      }
+      if (e.key === 'Enter') { e.preventDefault(); addMasterItem(type); }
     }
   </script>
 </body>
