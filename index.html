@@ -121,7 +121,7 @@
       font-weight: bold;
     }
 
-    input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
+    input[type="text"], input[type="date"], input[type="number"], select, textarea {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
@@ -365,7 +365,7 @@
   </header>
 
   <div class="container">
-    <div id="sync-indicator" class="sync-status">⚪ オフライン（端末に保存中）</div>
+    <div id="sync-indicator" class="sync-status">⚪ オフライン（端末保存）</div>
 
     <!-- 1. 📝 登録タブ -->
     <div id="tab-register" class="tab-content">
@@ -413,8 +413,11 @@
           </div>
 
           <div class="input-group">
-            <label>放送開始時刻</label>
-            <input type="time" id="start-time" required>
+            <label>放送開始時刻 (24:00〜30:00の深夜帯も入力可能)</label>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <select id="start-time-hour" style="flex: 1;"></select> 時
+              <select id="start-time-minute" style="flex: 1;"></select> 分
+            </div>
           </div>
 
           <div class="input-group">
@@ -479,20 +482,30 @@
       </div>
     </div>
 
-    <!-- 4. ★ 履歴タブ -->
+    <!-- 4. ★ 履歴・作品管理タブ (3本立て構成) -->
     <div id="tab-history" class="tab-content">
       <div id="unrated-alert-container"></div>
+
+      <!-- ① 放送中・放送予定のドラマ一覧 -->
       <div class="card">
-        <h2>完了作品の検索</h2>
-        <input type="text" id="history-search" placeholder="🔍 タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
+        <h2>📺 放送中・放送予定のドラマ一覧</h2>
+        <div id="active-drama-list"></div>
       </div>
+
+      <!-- ② 完了作品の検索 -->
       <div class="card">
-        <h2>視聴完了リスト</h2>
+        <h2>🔍 完了作品の検索</h2>
+        <input type="text" id="history-search" placeholder="タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
+      </div>
+
+      <!-- ③ 視聴完了リスト -->
+      <div class="card">
+        <h2>🎬 視聴完了リスト</h2>
         <div id="history-list"></div>
       </div>
     </div>
 
-    <!-- 5. ⚙️ 設定タブ（復元完了） -->
+    <!-- 5. ⚙️ 設定タブ -->
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h2>選択肢のカスタマイズ登録</h2>
@@ -602,9 +615,45 @@
     let currentSchedules = [];
     let calendarDate = new Date();
 
-    // ----------------------------------------------------
-    // Firebase Auth & リアルタイム同期監視
-    // ----------------------------------------------------
+    function parseCustomTime(dateStr, timeStr) {
+      if (!dateStr) return new Date();
+      let [year, month, day] = dateStr.split('-').map(Number);
+      let [hour, minute] = (timeStr || "00:00").split(':').map(Number);
+
+      if (isNaN(hour)) hour = 0;
+      if (isNaN(minute)) minute = 0;
+
+      if (hour >= 24) {
+        const baseDate = new Date(year, month - 1, day);
+        baseDate.setDate(baseDate.getDate() + 1);
+        baseDate.setHours(hour - 24, minute, 0, 0);
+        return baseDate;
+      } else {
+        return new Date(year, month - 1, day, hour, minute, 0, 0);
+      }
+    }
+
+    function initTimeSelectors() {
+      const hourSelect = document.getElementById('start-time-hour');
+      const minSelect = document.getElementById('start-time-minute');
+
+      if (!hourSelect || !minSelect) return;
+
+      let hourOpts = '';
+      for (let h = 0; h <= 30; h++) {
+        const val = String(h).padStart(2, '0');
+        hourOpts += `<option value="${val}">${val}</option>`;
+      }
+      hourSelect.innerHTML = hourOpts;
+
+      let minOpts = '';
+      for (let m = 0; m < 60; m += 5) {
+        const val = String(m).padStart(2, '0');
+        minOpts += `<option value="${val}">${val}</option>`;
+      }
+      minSelect.innerHTML = minOpts;
+    }
+
     if (auth) {
       auth.onAuthStateChanged(user => {
         currentUser = user;
@@ -619,8 +668,6 @@
             </div>
           `;
           syncIndicator.innerText = `🟢 クラウド同期中 (${user.displayName})`;
-          
-          // クラウドの変更をリアルタイム監視（スマホ ⇔ PC 即時自動同期）
           listenToCloudChanges();
         } else {
           if (unsubscribeSync) unsubscribeSync();
@@ -643,7 +690,6 @@
       if (auth) auth.signOut();
     }
 
-    // クラウド保存
     function saveData() {
       localStorage.setItem('drama_master_data', JSON.stringify(masterData));
       localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
@@ -657,10 +703,8 @@
       }
     }
 
-    // クラウドリアルタイム同期の受信
     function listenToCloudChanges() {
       if (!currentUser || !db) return;
-      
       if (unsubscribeSync) unsubscribeSync();
 
       unsubscribeSync = db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
@@ -677,18 +721,13 @@
           renderHistory();
           renderMasterOptions();
         } else {
-          // クラウドにデータがまだない場合は初回保存
           saveData();
         }
-      }, err => {
-        console.error("リアルタイム同期エラー:", err);
-      });
+      }, err => console.error("リアルタイム同期エラー:", err));
     }
 
-    // ----------------------------------------------------
-    // 初期化 ＆ 全般UI処理
-    // ----------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
+      initTimeSelectors();
       renderMasterOptions();
       resetForm();
       renderCalendar();
@@ -707,7 +746,7 @@
         register: "📝 ドラマ登録・編集",
         tasks: "✅ 未視聴タスク",
         calendar: "📅 カレンダー",
-        history: "★ 視聴履歴",
+        history: "★ 履歴・作品管理",
         settings: "⚙️ 設定"
       };
       document.getElementById('header-title').innerText = titles[tabName] || "ドラマ管理";
@@ -843,6 +882,10 @@
       const editId = document.getElementById('edit-id').value;
       const selectedServices = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => cb.value);
 
+      const h = document.getElementById('start-time-hour').value;
+      const m = document.getElementById('start-time-minute').value;
+      const timeVal = `${h}:${m}`;
+
       const newItem = {
         id: editId ? parseInt(editId) : Date.now(),
         title: document.getElementById('title').value.trim(),
@@ -851,7 +894,7 @@
         writer: document.getElementById('writer').value,
         director: document.getElementById('director').value,
         startDate: document.getElementById('start-date').value,
-        startTime: document.getElementById('start-time').value,
+        startTime: timeVal,
         duration: document.getElementById('duration').value,
         services: selectedServices,
         finalDate: document.getElementById('final-date').value,
@@ -882,6 +925,8 @@
       document.getElementById('writer').value = '';
       document.getElementById('director').value = '';
       document.getElementById('duration').value = '';
+      document.getElementById('start-time-hour').value = '20';
+      document.getElementById('start-time-minute').value = '00';
 
       currentSelectedActors = [];
       currentSchedules = [];
@@ -903,7 +948,13 @@
       document.getElementById('writer').value = item.writer || '';
       document.getElementById('director').value = item.director || '';
       document.getElementById('start-date').value = item.startDate;
-      document.getElementById('start-time').value = item.startTime;
+
+      if (item.startTime && item.startTime.includes(':')) {
+        const [h, m] = item.startTime.split(':');
+        document.getElementById('start-time-hour').value = h;
+        document.getElementById('start-time-minute').value = m;
+      }
+
       document.getElementById('duration').value = item.duration || '';
       document.getElementById('final-date').value = item.finalDate || '';
       document.getElementById('episode-count').value = item.schedules ? item.schedules.length : '';
@@ -928,7 +979,8 @@
       dramaList.forEach(drama => {
         (drama.schedules || []).forEach((sched, index) => {
           if (!sched.date) return;
-          const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
+          const broadcastTime = parseCustomTime(sched.date, drama.startTime);
+
           if (now >= broadcastTime && sched.status !== '視聴済み') {
             count++;
             const item = document.createElement('div');
@@ -939,7 +991,7 @@
                 <input type="checkbox" style="width: 20px; height: 20px;" onchange="markAsWatched(${drama.id}, ${index}, this.checked)">
                 <div>
                   <div style="font-weight: bold;">${drama.title} (第${sched.episode}話)</div>
-                  <div style="font-size: 0.85rem; color: var(--sub-text);">📅 ${sched.date} ${drama.startTime || ''}</div>
+                  <div style="font-size: 0.85rem; color: var(--sub-text);">📅 放送日: ${sched.date} ${drama.startTime || ''}</div>
                 </div>
               </div>
             `;
@@ -1011,7 +1063,8 @@
               const ev = document.createElement('div');
               ev.className = 'calendar-event';
               ev.innerText = `${drama.title} (${sched.episode}話)`;
-              const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
+              
+              const broadcastTime = parseCustomTime(sched.date, drama.startTime);
               if (now >= broadcastTime && sched.status !== '視聴済み') {
                 ev.classList.add('unread');
               }
@@ -1024,7 +1077,49 @@
       }
     }
 
+    // ----------------------------------------------------
+    // ★ 履歴・作品管理画面（3本立て処理）
+    // ----------------------------------------------------
     function renderHistory() {
+      renderActiveDramas();
+      renderCompletedDramas();
+    }
+
+    // 1. 放送中・未完のドラマ一覧描画
+    function renderActiveDramas() {
+      const activeContainer = document.getElementById('active-drama-list');
+      if (!activeContainer) return;
+
+      const activeDramas = dramaList.filter(drama => {
+        if (!drama.schedules || drama.schedules.length === 0) return true;
+        const lastEp = drama.schedules[drama.schedules.length - 1];
+        return lastEp.status !== '視聴済み';
+      });
+
+      if (activeDramas.length === 0) {
+        activeContainer.innerHTML = '<p style="text-align: center; color: var(--sub-text);">現在放送中・予定の登録ドラマはありません。</p>';
+        return;
+      }
+
+      activeContainer.innerHTML = activeDramas.map(drama => {
+        const watchedCount = (drama.schedules || []).filter(s => s.status === '視聴済み').length;
+        const totalCount = (drama.schedules || []).length;
+        return `
+          <div style="background: #faf8f5; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: bold; font-size: 0.95rem;">${drama.title}</div>
+              <div style="font-size: 0.8rem; color: var(--sub-text);">
+                ${drama.station || '未指定'} | 進捗: ${watchedCount} / ${totalCount} 話
+              </div>
+            </div>
+            <button type="button" style="padding: 4px 10px; font-size: 0.8rem;" onclick="editDrama(${drama.id})">編集</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 2 & 3. 完了作品と検索描画
+    function renderCompletedDramas() {
       const alertContainer = document.getElementById('unrated-alert-container');
       const listContainer = document.getElementById('history-list');
       const keyword = (document.getElementById('history-search')?.value || '').toLowerCase().trim();
@@ -1117,7 +1212,7 @@
     }
 
     // ----------------------------------------------------
-    // ⚙️ 設定画面マスター制御 (完全修正版)
+    // ⚙️ 設定画面マスター制御
     // ----------------------------------------------------
     function renderMasterOptions() {
       document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
