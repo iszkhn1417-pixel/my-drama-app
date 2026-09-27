@@ -6,304 +6,1149 @@
   <title>ドラマ・映画 視聴管理</title>
   <style>
     :root {
-      --bg: #121212;
-      --card-bg: #1e1e1e;
-      --accent: #bb86fc;
-      --text: #ffffff;
-      --sub-text: #a0a0a0;
-      --border: #333333;
+      --bg: #fdfbf7;
+      --card-bg: #ffffff;
+      --accent: #e0a96d;
+      --accent-hover: #d09455;
+      --text: #333333;
+      --sub-text: #777777;
+      --border: #e8e2d5;
+      --header-bg: #f5efe6;
+      --unread-red: #d9534f;
     }
+    
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg);
       color: var(--text);
-      padding-bottom: 40px;
+      padding-bottom: 75px;
     }
+
     header {
-      background-color: var(--card-bg);
-      padding: 16px;
+      background-color: var(--header-bg);
+      padding: 14px 16px;
       text-align: center;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: bold;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 100;
     }
+
     .container {
       max-width: 600px;
       margin: 0 auto;
       padding: 16px;
     }
-    .form-card {
+
+    /* タブ切り替え制御 */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* カード・フォームスタイル */
+    .card {
       background-color: var(--card-bg);
       border-radius: 12px;
       padding: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
       border: 1px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     }
-    .form-card h2 {
+
+    .card h2 {
       margin-top: 0;
       font-size: 1.1rem;
-      color: var(--accent);
+      color: var(--text);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 6px;
+      margin-bottom: 16px;
     }
+
     .input-group {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
+
     label {
       display: block;
       font-size: 0.85rem;
       color: var(--sub-text);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      font-weight: bold;
     }
-    input, select, textarea {
+
+    input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      background-color: #2a2a2a;
-      color: #fff;
-      box-sizing: border-box;
-      font-size: 1rem;
+      background-color: #faf8f5;
+      color: var(--text);
+      font-size: 0.95rem;
     }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      background-color: #ffffff;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
     button {
-      width: 100%;
-      padding: 12px;
+      padding: 10px 16px;
       border: none;
       border-radius: 8px;
       background-color: var(--accent);
-      color: #000;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    button:active {
-      opacity: 0.8;
-    }
-    .filter-group {
-      margin-bottom: 16px;
-    }
-    .item-card {
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      border: 1px solid var(--border);
-      position: relative;
-    }
-    .item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .item-title {
-      font-size: 1.1rem;
-      font-weight: bold;
-      margin: 0 0 6px 0;
-    }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      background-color: #333;
-      color: var(--accent);
-    }
-    .item-info {
-      font-size: 0.9rem;
-      color: var(--sub-text);
-      margin: 4px 0;
-    }
-    .item-memo {
+      color: #fff;
       font-size: 0.95rem;
-      margin-top: 8px;
-      white-space: pre-wrap;
-    }
-    .delete-btn {
-      background: none;
-      border: none;
-      color: #ff5252;
-      font-size: 0.85rem;
+      font-weight: bold;
       cursor: pointer;
-      padding: 4px 0;
-      margin-top: 8px;
-      width: auto;
-      text-align: right;
+      transition: background-color 0.2s;
     }
 
-    /* フッターバナー領域 */
-    footer {
-      margin-top: 40px;
-      padding: 24px 16px;
-      background-color: var(--card-bg);
-      border-top: 1px solid var(--border);
-      text-align: center;
+    button:hover {
+      background-color: var(--accent-hover);
     }
-    .banner-title {
-      font-size: 0.85rem;
-      color: var(--sub-text);
-      margin-bottom: 12px;
-      font-weight: bold;
-      letter-spacing: 0.05em;
+
+    button.btn-block {
+      width: 100%;
     }
-    .banner-container {
+
+    button.btn-secondary {
+      background-color: #a09e98;
+    }
+
+    button.btn-danger {
+      background-color: var(--unread-red);
+    }
+
+    /* 検索ボタン付き入力 */
+    .search-input-wrapper {
       display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      max-width: 600px;
-      margin: 0 auto;
+      gap: 8px;
     }
-    .banner-card {
-      flex: 1;
-      min-width: 140px;
-      max-width: 260px;
-      padding: 12px 16px;
-      background-color: #2a2a2a;
+
+    /* あいまい候補表示 */
+    .suggestions {
       border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      text-decoration: none;
+      background: white;
+      border-radius: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 4px;
+    }
+
+    .suggestion-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .suggestion-item:hover {
+      background-color: #f5efe6;
+    }
+
+    .selected-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tag {
+      background-color: #f0e8db;
+      padding: 4px 10px;
+      border-radius: 12px;
       font-size: 0.85rem;
-      font-weight: bold;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background-color 0.2s, border-color 0.2s;
+      gap: 6px;
     }
-    .banner-card:active {
-      background-color: #333333;
-      border-color: var(--accent);
+
+    .tag .remove {
+      cursor: pointer;
+      color: #999;
+      font-weight: bold;
+    }
+
+    /* 複数チェックボックスリスト */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: #faf8f5;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+    }
+
+    /* スケジュール編集リスト */
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      background: #faf8f5;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .schedule-item input[type="date"] {
+      flex: 2;
+    }
+
+    .schedule-item select {
+      flex: 1.5;
+    }
+
+    /* ボトムナビゲーション */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-color: #ffffff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-decoration: none;
+      color: var(--sub-text);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .nav-item .icon {
+      font-size: 1.2rem;
+      margin-bottom: 2px;
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* カレンダー表示 */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+    }
+
+    .calendar-day-header {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--sub-text);
+      padding: 4px 0;
+    }
+
+    .calendar-cell {
+      min-height: 65px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    .calendar-date-num {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 2px;
+    }
+
+    .calendar-event {
+      background-color: #f0e8db;
+      color: var(--text);
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin-top: 2px;
+      font-size: 0.68rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .calendar-event.unread {
+      background-color: var(--unread-red);
+      color: white;
+    }
+
+    /* 警告アラート */
+    .alert-box {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    /* 星評価 */
+    .star-rating {
+      font-size: 1.4rem;
+      color: #ccc;
+      cursor: pointer;
+    }
+    .star-rating .star.active {
+      color: #f39c12;
+    }
+
+    .setting-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .setting-item {
+      background: #faf8f5;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .setting-item .delete-btn {
+      color: #999;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-  <header>🎬 ドラマ・映画 視聴ノート</header>
+  <header id="header-title">📅 カレンダー</header>
 
   <div class="container">
-    <!-- 登録フォーム -->
-    <div class="form-card">
-      <h2>新しい作品を追加</h2>
-      <form id="media-form">
-        <div class="input-group">
-          <label for="title">タイトル *</label>
-          <input type="text" id="title" required placeholder="例: VIVANT">
-        </div>
-        <div class="input-group">
-          <label for="type">区分</label>
-          <select id="type">
-            <option value="ドラマ">ドラマ</option>
-            <option value="映画">映画</option>
-            <option value="アニメ">アニメ</option>
-            <option value="その他">その他</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="status">ステータス</label>
-          <select id="status">
-            <option value="視聴中">視聴中</option>
-            <option value="見たい">見たい</option>
-            <option value="視聴完了">視聴完了</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="memo">メモ / 感想</label>
-          <textarea id="memo" rows="3" placeholder="お気に入りの話数や感想など"></textarea>
-        </div>
-        <button type="submit">保存する</button>
-      </form>
+
+    <!-- 1. 📝 登録タブ -->
+    <div id="tab-register" class="tab-content">
+      <div class="card">
+        <h2 id="form-title">新しいドラマ・映画を追加</h2>
+        <form id="drama-form">
+          <input type="hidden" id="edit-id">
+
+          <div class="input-group">
+            <label>ドラマ名 / 作品名 *</label>
+            <div class="search-input-wrapper">
+              <input type="text" id="title" required placeholder="例: VIVANT">
+              <button type="button" onclick="searchNetWork()" style="white-space: nowrap;">🔍 検索</button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>出演俳優 (1文字で候補検索)</label>
+            <input type="text" id="actor-input" placeholder="俳優名を入力して検索..." oninput="filterActors()">
+            <div id="actor-suggestions" class="suggestions" style="display:none;"></div>
+            <div id="selected-actors" class="selected-tags"></div>
+          </div>
+
+          <div class="input-group">
+            <label>放送局</label>
+            <select id="station"></select>
+          </div>
+
+          <div class="input-group">
+            <label>脚本</label>
+            <select id="writer"></select>
+          </div>
+
+          <div class="input-group">
+            <label>監督</label>
+            <select id="director"></select>
+          </div>
+
+          <div class="input-group">
+            <label>放送開始日 & 曜日</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="date" id="start-date" required onchange="updateDayOfWeek()">
+              <span id="day-of-week" style="font-weight: bold; min-width: 45px;">(曜)</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>放送開始時刻</label>
+            <input type="time" id="start-time" required>
+          </div>
+
+          <div class="input-group">
+            <label>所要時間</label>
+            <select id="duration"></select>
+          </div>
+
+          <div class="input-group">
+            <label>配信サービス (複数選択可)</label>
+            <div id="services-checkboxes" class="checkbox-group"></div>
+          </div>
+
+          <div class="input-group">
+            <label>最終話の日付 (空欄可・自動計算)</label>
+            <input type="date" id="final-date">
+          </div>
+
+          <div class="input-group">
+            <label>話数 (入力すると下にスケジュール生成)</label>
+            <input type="number" id="episode-count" min="1" max="50" placeholder="例: 10" onchange="generateSchedules()">
+          </div>
+
+          <div class="input-group">
+            <label>各話スケジュール調整</label>
+            <div id="schedule-container"></div>
+          </div>
+
+          <div class="btn-group" style="margin-top: 20px;">
+            <button type="submit" class="btn-block">保存する</button>
+            <button type="button" class="btn-secondary btn-block" onclick="resetForm()">キャンセル</button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <!-- 検索 & 絞り込み -->
-    <div class="filter-group">
-      <input type="text" id="search" placeholder="🔍 タイトルで検索..." oninput="renderItems()">
+    <!-- 2. ✅ タスクタブ -->
+    <div id="tab-tasks" class="tab-content">
+      <div class="card">
+        <h2>未視聴の放送済みドラマ</h2>
+        <div id="task-list"></div>
+      </div>
     </div>
 
-    <!-- リスト表示エリア -->
-    <div id="item-list"></div>
+    <!-- 3. 📅 カレンダータブ (ホーム) -->
+    <div id="tab-calendar" class="tab-content active">
+      <div class="card">
+        <div class="calendar-header">
+          <button type="button" onclick="changeMonth(-1)">◀ 前月</button>
+          <h3 id="calendar-month-title" style="margin: 0;">2026年 10月</h3>
+          <button type="button" onclick="changeMonth(1)">次月 ▶</button>
+        </div>
+        <div class="calendar-grid">
+          <div class="calendar-day-header" style="color:red;">日</div>
+          <div class="calendar-day-header">月</div>
+          <div class="calendar-day-header">火</div>
+          <div class="calendar-day-header">水</div>
+          <div class="calendar-day-header">木</div>
+          <div class="calendar-day-header">金</div>
+          <div class="calendar-day-header" style="color:blue;">土</div>
+        </div>
+        <div id="calendar-grid-cells" class="calendar-grid"></div>
+      </div>
+    </div>
+
+    <!-- 4. ★ 履歴タブ -->
+    <div id="tab-history" class="tab-content">
+      <div id="unrated-alert-container"></div>
+      
+      <div class="card">
+        <h2>完了作品の検索</h2>
+        <input type="text" id="history-search" placeholder="🔍 タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
+      </div>
+
+      <div class="card">
+        <h2>視聴完了リスト</h2>
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- 5. ⚙️ 設定タブ -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card">
+        <h2>選択肢のカスタマイズ登録</h2>
+
+        <div class="input-group">
+          <label>出演俳優の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-actor-input" placeholder="例: 小栗旬" onkeypress="handleEnter(event, 'actors')">
+            <button type="button" onclick="addMasterItem('actors')">追加</button>
+          </div>
+          <div id="setting-actors-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>放送局の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-station-input" placeholder="例: TBS" onkeypress="handleEnter(event, 'stations')">
+            <button type="button" onclick="addMasterItem('stations')">追加</button>
+          </div>
+          <div id="setting-stations-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>脚本家の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-writer-input" placeholder="例: 三谷幸喜" onkeypress="handleEnter(event, 'writers')">
+            <button type="button" onclick="addMasterItem('writers')">追加</button>
+          </div>
+          <div id="setting-writers-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>監督の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-director-input" placeholder="例: 福田雄一" onkeypress="handleEnter(event, 'directors')">
+            <button type="button" onclick="addMasterItem('directors')">追加</button>
+          </div>
+          <div id="setting-directors-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>配信サービスの追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-service-input" placeholder="例: Netflix" onkeypress="handleEnter(event, 'services')">
+            <button type="button" onclick="addMasterItem('services')">追加</button>
+          </div>
+          <div id="setting-services-list" class="setting-list"></div>
+        </div>
+
+        <div class="input-group">
+          <label>所要時間の追加</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="add-duration-input" placeholder="例: 60分" onkeypress="handleEnter(event, 'durations')">
+            <button type="button" onclick="addMasterItem('durations')">追加</button>
+          </div>
+          <div id="setting-durations-list" class="setting-list"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- 下部バナーリンクエリア -->
-  <footer>
-    <div class="banner-title">RECOMMENDED LINKS</div>
-    <div class="banner-container">
-      <a href="https://tver.jp" target="_blank" rel="noopener noreferrer" class="banner-card">
-        📺 TVerで視聴する
-      </a>
-      <a href="https://eiga.com" target="_blank" rel="noopener noreferrer" class="banner-card">
-        🎬 映画.com情報
-      </a>
+  <!-- ボトムナビゲーションバー -->
+  <nav class="bottom-nav">
+    <div class="nav-item" onclick="switchTab('register')">
+      <div class="icon">📝</div>
+      <div>登録</div>
     </div>
-  </footer>
+    <div class="nav-item" onclick="switchTab('tasks')">
+      <div class="icon">✅</div>
+      <div>タスク</div>
+    </div>
+    <div class="nav-item active" onclick="switchTab('calendar')">
+      <div class="icon">📅</div>
+      <div>カレンダー</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('history')">
+      <div class="icon">★</div>
+      <div>履歴</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('settings')">
+      <div class="icon">⚙️</div>
+      <div>設定</div>
+    </div>
+  </nav>
 
   <script>
-    let items = JSON.parse(localStorage.getItem('drama_items') || '[]');
+    // ----------------------------------------------------
+    // 初期設定 & ローカルストレージ
+    // ----------------------------------------------------
+    const defaultMaster = {
+      actors: ["堺雅人", "阿部寛", "二宮和也", "長澤まさみ", "新垣結衣", "小栗旬"],
+      stations: ["TBS", "フジテレビ", "日本テレビ", "テレビ朝日", "テレビ東京", "NHK"],
+      writers: ["福田靖", "野木亜紀子", "三谷幸喜", "坂元裕二"],
+      directors: ["福澤克雄", "塚原あゆ子"],
+      services: ["TVer", "Netflix", "U-NEXT", "Amazonプライム", "Hulu", "Disney+"],
+      durations: ["30分", "45分", "60分", "90分", "120分"]
+    };
 
-    const form = document.getElementById('media-form');
-    const itemList = document.getElementById('item-list');
+    let masterData = JSON.parse(localStorage.getItem('drama_master_data')) || defaultMaster;
+    let dramaList = JSON.parse(localStorage.getItem('drama_app_items')) || [];
+    let currentSelectedActors = [];
+    let currentSchedules = [];
+    let calendarDate = new Date();
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const newItem = {
-        id: Date.now(),
-        title: document.getElementById('title').value,
-        type: document.getElementById('type').value,
-        status: document.getElementById('status').value,
-        memo: document.getElementById('memo').value,
-        date: new Date().toLocaleDateString('ja-JP')
-      };
-      items.unshift(newItem);
-      saveAndRender();
-      form.reset();
+    // ----------------------------------------------------
+    // 画面初期化
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      renderMasterOptions();
+      renderCalendar();
+      renderTasks();
+      renderHistory();
     });
 
-    function deleteItem(id) {
-      if (confirm('本当に削除しますか？')) {
-        items = items.filter(item => item.id !== id);
-        saveAndRender();
+    function saveData() {
+      localStorage.setItem('drama_master_data', JSON.stringify(masterData));
+      localStorage.setItem('drama_app_items', JSON.stringify(dramaList));
+    }
+
+    // ----------------------------------------------------
+    // タブ切り替え
+    // ----------------------------------------------------
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.classList.add('active');
+
+      const titles = {
+        register: "📝 ドラマ登録・編集",
+        tasks: "✅ 未視聴タスク",
+        calendar: "📅 カレンダー",
+        history: "★ 視聴履歴",
+        settings: "⚙️ 設定"
+      };
+      document.getElementById('header-title').innerText = titles[tabName] || "ドラマ管理";
+
+      const navIndices = { register: 0, tasks: 1, calendar: 2, history: 3, settings: 4 };
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navItems[navIndices[tabName]]) {
+        navItems[navIndices[tabName]].classList.add('active');
       }
+
+      if (tabName === 'calendar') renderCalendar();
+      if (tabName === 'tasks') renderTasks();
+      if (tabName === 'history') renderHistory();
     }
 
-    function saveAndRender() {
-      localStorage.setItem('drama_items', JSON.stringify(items));
-      renderItems();
+    // ----------------------------------------------------
+    // 登録画面の制御
+    // ----------------------------------------------------
+    function searchNetWork() {
+      const title = document.getElementById('title').value.trim();
+      if (!title) {
+        alert("ドラマ名を入力してから検索ボタンを押してください。");
+        return;
+      }
+      const url = `https://www.google.com/search?q=${encodeURIComponent('ドラマ ' + title)}`;
+      window.open(url, '_blank');
     }
 
-    function renderItems() {
-      const keyword = document.getElementById('search').value.toLowerCase();
-      itemList.innerHTML = '';
+    function updateDayOfWeek() {
+      const dateVal = document.getElementById('start-date').value;
+      if (!dateVal) return;
+      const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+      const d = new Date(dateVal);
+      document.getElementById('day-of-week').innerText = days[d.getDay()];
+      if (currentSchedules.length === 0) generateSchedules();
+    }
 
-      const filtered = items.filter(item => item.title.toLowerCase().includes(keyword));
+    // あいまい俳優検索
+    function filterActors() {
+      const input = document.getElementById('actor-input').value.toLowerCase().trim();
+      const container = document.getElementById('actor-suggestions');
+      container.innerHTML = '';
 
-      if (filtered.length === 0) {
-        itemList.innerHTML = '<p style="text-align:center; color:#666;">データがありません</p>';
+      if (!input) {
+        container.style.display = 'none';
         return;
       }
 
-      filtered.forEach(item => {
+      const filtered = masterData.actors.filter(actor => 
+        actor.toLowerCase().includes(input) && !currentSelectedActors.includes(actor)
+      );
+
+      if (filtered.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      filtered.forEach(actor => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerText = actor;
+        div.onclick = () => selectActor(actor);
+        container.appendChild(div);
+      });
+      container.style.display = 'block';
+    }
+
+    function selectActor(actor) {
+      if (!currentSelectedActors.includes(actor)) {
+        currentSelectedActors.push(actor);
+        renderSelectedActors();
+      }
+      document.getElementById('actor-input').value = '';
+      document.getElementById('actor-suggestions').style.display = 'none';
+    }
+
+    function removeActor(actor) {
+      currentSelectedActors = currentSelectedActors.filter(a => a !== actor);
+      renderSelectedActors();
+    }
+
+    function renderSelectedActors() {
+      const container = document.getElementById('selected-actors');
+      container.innerHTML = currentSelectedActors.map(a => `
+        <span class="tag">${a} <span class="remove" onclick="removeActor('${a}')">×</span></span>
+      `).join('');
+    }
+
+    // 話数スケジュール生成
+    function generateSchedules() {
+      const count = parseInt(document.getElementById('episode-count').value) || 0;
+      const startDateStr = document.getElementById('start-date').value;
+      const container = document.getElementById('schedule-container');
+      container.innerHTML = '';
+
+      if (!startDateStr || count <= 0) {
+        currentSchedules = [];
+        return;
+      }
+
+      const baseDate = new Date(startDateStr);
+      currentSchedules = [];
+
+      for (let i = 1; i <= count; i++) {
+        const epDate = new Date(baseDate);
+        epDate.setDate(baseDate.getDate() + (i - 1) * 7);
+        const dateString = epDate.toISOString().split('T')[0];
+
+        currentSchedules.push({
+          episode: i,
+          date: dateString,
+          status: "視聴前"
+        });
+      }
+
+      renderScheduleList();
+      if (currentSchedules.length > 0) {
+        document.getElementById('final-date').value = currentSchedules[currentSchedules.length - 1].date;
+      }
+    }
+
+    function renderScheduleList() {
+      const container = document.getElementById('schedule-container');
+      container.innerHTML = currentSchedules.map((s, index) => `
+        <div class="schedule-item">
+          <span>第${s.episode}話</span>
+          <input type="date" value="${s.date}" onchange="updateScheduleDate(${index}, this.value)">
+          <select onchange="updateScheduleStatus(${index}, this.value)">
+            <option value="視聴前" ${s.status === '視聴前' ? 'selected' : ''}>視聴前</option>
+            <option value="視聴中" ${s.status === '視聴中' ? 'selected' : ''}>視聴中</option>
+            <option value="視聴後" ${s.status === '視聴後' ? 'selected' : ''}>視聴後</option>
+          </select>
+        </div>
+      `).join('');
+    }
+
+    function updateScheduleDate(index, val) {
+      currentSchedules[index].date = val;
+      if (index === currentSchedules.length - 1) {
+        document.getElementById('final-date').value = val;
+      }
+    }
+
+    function updateScheduleStatus(index, val) {
+      currentSchedules[index].status = val;
+    }
+
+    // フォーム保存
+    document.getElementById('drama-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const editId = document.getElementById('edit-id').value;
+      const selectedServices = Array.from(document.querySelectorAll('.service-checkbox:checked')).map(cb => cb.value);
+
+      const newItem = {
+        id: editId ? parseInt(editId) : Date.now(),
+        title: document.getElementById('title').value.trim(),
+        actors: currentSelectedActors,
+        station: document.getElementById('station').value,
+        writer: document.getElementById('writer').value,
+        director: document.getElementById('director').value,
+        startDate: document.getElementById('start-date').value,
+        startTime: document.getElementById('start-time').value,
+        duration: document.getElementById('duration').value,
+        services: selectedServices,
+        finalDate: document.getElementById('final-date').value,
+        schedules: currentSchedules,
+        rating: editId ? (dramaList.find(d => d.id == editId)?.rating || 0) : 0,
+        comment: editId ? (dramaList.find(d => d.id == editId)?.comment || "") : ""
+      };
+
+      if (editId) {
+        const idx = dramaList.findIndex(d => d.id == editId);
+        if (idx !== -1) dramaList[idx] = newItem;
+      } else {
+        dramaList.push(newItem);
+      }
+
+      saveData();
+      alert('保存が完了しました！');
+      resetForm();
+      switchTab('calendar');
+    });
+
+    function resetForm() {
+      document.getElementById('drama-form').reset();
+      document.getElementById('edit-id').value = '';
+      document.getElementById('form-title').innerText = '新しいドラマ・映画を追加';
+      currentSelectedActors = [];
+      currentSchedules = [];
+      renderSelectedActors();
+      document.getElementById('schedule-container').innerHTML = '';
+      document.getElementById('day-of-week').innerText = '(曜)';
+    }
+
+    function editDrama(id) {
+      const item = dramaList.find(d => d.id === id);
+      if (!item) return;
+
+      switchTab('register');
+      document.getElementById('form-title').innerText = 'ドラマの編集';
+      document.getElementById('edit-id').value = item.id;
+      document.getElementById('title').value = item.title;
+      document.getElementById('station').value = item.station;
+      document.getElementById('writer').value = item.writer;
+      document.getElementById('director').value = item.director;
+      document.getElementById('start-date').value = item.startDate;
+      document.getElementById('start-time').value = item.startTime;
+      document.getElementById('duration').value = item.duration;
+      document.getElementById('final-date').value = item.finalDate || '';
+      document.getElementById('episode-count').value = item.schedules ? item.schedules.length : '';
+
+      currentSelectedActors = item.actors || [];
+      renderSelectedActors();
+
+      currentSchedules = item.schedules || [];
+      renderScheduleList();
+
+      document.querySelectorAll('.service-checkbox').forEach(cb => {
+        cb.checked = (item.services || []).includes(cb.value);
+      });
+
+      updateDayOfWeek();
+    }
+
+    // ----------------------------------------------------
+    // ✅ タスク画面の制御
+    // ----------------------------------------------------
+    function renderTasks() {
+      const container = document.getElementById('task-list');
+      container.innerHTML = '';
+
+      const now = new Date();
+      let taskCount = 0;
+
+      dramaList.forEach(drama => {
+        (drama.schedules || []).forEach((sched, index) => {
+          if (!sched.date) return;
+
+          // 放送開始日時
+          const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
+
+          // 放送時間を経過しており、未完了（視聴前／視聴中）のもの
+          if (now >= broadcastTime && sched.status !== '視聴後') {
+            taskCount++;
+            const item = document.createElement('div');
+            item.className = 'card';
+            item.style.marginBottom = '8px';
+            item.innerHTML = `
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <input type="checkbox" style="width: 20px; height: 20px; margin-top: 4px;" 
+                  onchange="markAsWatched(${drama.id}, ${index}, this.checked)">
+                <div>
+                  <div style="font-weight: bold; font-size: 1rem;">${drama.title} (第${sched.episode}話)</div>
+                  <div style="font-size: 0.85rem; color: var(--sub-text); margin-top: 2px;">
+                    📅 放送日時: ${sched.date} ${drama.startTime || ''}
+                  </div>
+                  <div style="font-size: 0.85rem; color: var(--sub-text);">
+                    📺 配信: ${(drama.services || []).join(', ') || '指定なし'}
+                  </div>
+                </div>
+              </div>
+            `;
+            container.appendChild(item);
+          }
+        });
+      });
+
+      if (taskCount === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--sub-text);">未視聴のタスクはありません！✨</p>';
+      }
+    }
+
+    function markAsWatched(dramaId, schedIndex, isChecked) {
+      const drama = dramaList.find(d => d.id === dramaId);
+      if (drama && drama.schedules[schedIndex]) {
+        drama.schedules[schedIndex].status = isChecked ? '視聴後' : '視聴前';
+        saveData();
+        renderTasks();
+      }
+    }
+
+    // ----------------------------------------------------
+    // 📅 カレンダー画面の制御
+    // ----------------------------------------------------
+    function changeMonth(diff) {
+      calendarDate.setMonth(calendarDate.getMonth() + diff);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      document.getElementById('calendar-month-title').innerText = `${year}年 ${month + 1}月`;
+
+      const grid = document.getElementById('calendar-grid-cells');
+      grid.innerHTML = '';
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+
+      // 前月の空白セル
+      for (let i = 0; i < firstDay; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+        cell.style.background = '#f2efe9';
+        grid.appendChild(cell);
+      }
+
+      const now = new Date();
+
+      // 当月のセル
+      for (let date = 1; date <= lastDate; date++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+
+        const dateNum = document.createElement('div');
+        dateNum.className = 'calendar-date-num';
+        dateNum.innerText = date;
+        cell.appendChild(dateNum);
+
+        const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+
+        // ドラマのスケジュールを探索
+        dramaList.forEach(drama => {
+          (drama.schedules || []).forEach(sched => {
+            if (sched.date === currentDateStr) {
+              const ev = document.createElement('div');
+              ev.className = 'calendar-event';
+              ev.innerText = `${drama.title} (${sched.episode}話)`;
+
+              // 未視聴かつ放送日時を過ぎている場合は赤色ハイライト
+              const broadcastTime = new Date(`${sched.date}T${drama.startTime || '00:00'}`);
+              if (now >= broadcastTime && sched.status !== '視聴後') {
+                ev.classList.add('unread');
+              }
+
+              ev.onclick = () => editDrama(drama.id);
+              cell.appendChild(ev);
+            }
+          });
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+
+    // ----------------------------------------------------
+    // ★ 履歴画面の制御
+    // ----------------------------------------------------
+    function renderHistory() {
+      const alertContainer = document.getElementById('unrated-alert-container');
+      const listContainer = document.getElementById('history-list');
+      const keyword = document.getElementById('history-search').value.toLowerCase().trim();
+
+      alertContainer.innerHTML = '';
+      listContainer.innerHTML = '';
+
+      // 最終話が「視聴後」になったドラマを完了対象とする
+      const completedDramas = dramaList.filter(drama => {
+        if (!drama.schedules || drama.schedules.length === 0) return false;
+        const lastEp = drama.schedules[drama.schedules.length - 1];
+        return lastEp.status === '視聴後';
+      });
+
+      // 未評価アラートの確認
+      const unrated = completedDramas.filter(d => !d.rating || d.rating === 0);
+      if (unrated.length > 0) {
+        alertContainer.innerHTML = unrated.map(d => `
+          <div class="alert-box">⚠️ 「<b>${d.title}</b>」の評価がまだ設定されていません。</div>
+        `).join('');
+      }
+
+      // 検索フィルター (作品名・放送局・出演俳優のあいまい検索)
+      const filtered = completedDramas.filter(d => {
+        const matchTitle = d.title.toLowerCase().includes(keyword);
+        const matchStation = (d.station || '').toLowerCase().includes(keyword);
+        const matchActor = (d.actors || []).some(a => a.toLowerCase().includes(keyword));
+        return matchTitle || matchStation || matchActor;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = '<p style="text-align: center; color: var(--sub-text);">該当する完了ドラマはありません。</p>';
+        return;
+      }
+
+      filtered.forEach(drama => {
+        const lastEp = drama.schedules[drama.schedules.length - 1];
         const card = document.createElement('div');
-        card.className = 'item-card';
+        card.className = 'card';
         card.innerHTML = `
-          <div class="item-header">
-            <div class="item-title">${item.title}</div>
-            <span class="badge">${item.status}</span>
+          <div style="font-weight: bold; font-size: 1.1rem; cursor: pointer; color: var(--accent);" onclick="toggleHistoryDetail(${drama.id})">
+            🎬 ${drama.title}
           </div>
-          <div class="item-info">種別: ${item.type} | 登録日: ${item.date}</div>
-          ${item.memo ? `<div class="item-memo">${item.memo}</div>` : ''}
-          <div style="text-align: right;">
-            <button class="delete-btn" onclick="deleteItem(${item.id})">削除</button>
+          <div id="history-detail-${drama.id}" style="display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">放送局: ${drama.station || '未登録'}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 4px;">出演: ${(drama.actors || []).join(', ') || '未登録'}</div>
+            <div style="font-size: 0.9rem; color: var(--sub-text); margin-bottom: 8px;">完視聴日: ${lastEp.date}</div>
+
+            <div class="input-group">
+              <label>評価 (星5段階)</label>
+              <div class="star-rating" id="stars-${drama.id}">
+                ${[1, 2, 3, 4, 5].map(star => `
+                  <span class="star ${star <= (drama.rating || 0) ? 'active' : ''}" onclick="setRating(${drama.id},${star})">★</span>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>感想・コメント</label>
+              <textarea id="comment-${drama.id}" rows="3" placeholder="感想を入力...">${drama.comment || ''}</textarea>
+            </div>
+
+            <button type="button" onclick="saveHistoryReview(${drama.id})">評価と感想を保存</button>
           </div>
         `;
-        itemList.appendChild(card);
+        listContainer.appendChild(card);
       });
     }
 
-    // 初回描画
-    renderItems();
+    function toggleHistoryDetail(id) {
+      const el = document.getElementById(`history-detail-${id}`);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function setRating(dramaId, ratingVal) {
+      const drama = dramaList.find(d => d.id === dramaId);
+      if (drama) {
+        drama.rating = ratingVal;
+        saveData();
+        renderHistory();
+        toggleHistoryDetail(dramaId);
+      }
+    }
+
+    function saveHistoryReview(dramaId) {
+      const drama = dramaList.find(d => d.id === dramaId);
+      if (drama) {
+        drama.comment = document.getElementById(`comment-${dramaId}`).value;
+        saveData();
+        alert('感想を保存しました！');
+        renderHistory();
+      }
+    }
+
+    // ----------------------------------------------------
+    // ⚙️ 設定画面の制御
+    // ----------------------------------------------------
+    function renderMasterOptions() {
+      // 登録フォームのドロップダウン・チェックボックス更新
+      document.getElementById('station').innerHTML = masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
+      document.getElementById('writer').innerHTML = masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
+      document.getElementById('director').innerHTML = masterData.directors.map(d => `<option value="${d}">${d}</option>`).join('');
+      document.getElementById('duration').innerHTML = masterData.durations.map(d => `<option value="${d}">${d}</option>`).join('');
+
+      document.getElementById('services-checkboxes').innerHTML = masterData.services.map(s => `
+        <label class="checkbox-item">
+          <input type="checkbox" class="service-checkbox" value="${s}"> ${s}
+        </label>
+      `).join('');
+
+      // 設定画面のタグリスト表示
+      renderSettingTags('actors');
+      renderSettingTags('stations');
+      renderSettingTags('writers');
+      renderSettingTags('directors');
+      renderSettingTags('services');
+      renderSettingTags('durations');
+    }
+
+    function renderSettingTags(type) {
+      const container = document.getElementById(`setting-${type}-list`);
+      if (!container) return;
+      container.innerHTML = masterData[type].map(item => `
+        <div class="setting-item">
+          <span>${item}</span>
+          <span class="delete-btn" onclick="removeMasterItem('${type}', '${item}')">×</span>
+        </div>
+      `).join('');
+    }
+
+    function addMasterItem(type) {
+      const singleNames = {
+        actors: 'actor',
+        stations: 'station',
+        writers: 'writer',
+        directors: 'director',
+        services: 'service',
+        durations: 'duration'
+      };
+      const inputEl = document.getElementById(`add-${singleNames[type]}-input`);
+      if (!inputEl) return;
+      const val = inputEl.value.trim();
+
+      if (val && !masterData[type].includes(val)) {
+        masterData[type].push(val);
+        saveData();
+        renderMasterOptions();
+        inputEl.value = '';
+      }
+    }
+
+    function removeMasterItem(type, item) {
+      masterData[type] = masterData[type].filter(i => i !== item);
+      saveData();
+      renderMasterOptions();
+    }
+
+    function handleEnter(e, type) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addMasterItem(type);
+      }
+    }
   </script>
 </body>
 </html>
