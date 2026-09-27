@@ -23,6 +23,8 @@
       --unread-red: #d9534f;
       --today-bg: #fff9e6;
       --today-accent: #e67e22;
+      --danger: #d9534f;
+      --danger-hover: #c9302c;
     }
 
     * { box-sizing: border-box; }
@@ -154,6 +156,8 @@
     button:hover { background-color: var(--accent-hover); }
     button.btn-block { width: 100%; }
     button.btn-secondary { background-color: #a09e98; }
+    button.btn-danger { background-color: var(--danger); }
+    button.btn-danger:hover { background-color: var(--danger-hover); }
 
     .search-input-wrapper { display: flex; gap: 8px; }
 
@@ -365,7 +369,7 @@
   </header>
 
   <div class="container">
-    <div id="sync-indicator" class="sync-status">⚪ オフライン（端末保存）</div>
+    <div id="sync-indicator" class="sync-status">⚪ オフライン（端末に保存中）</div>
 
     <!-- 1. 📝 登録タブ -->
     <div id="tab-register" class="tab-content">
@@ -445,7 +449,7 @@
             <div id="schedule-container"></div>
           </div>
 
-          <div class="btn-group" style="margin-top: 20px;">
+          <div class="btn-group" style="margin-top: 20px;" id="form-btn-group">
             <button type="submit" class="btn-block">保存する</button>
             <button type="button" class="btn-secondary btn-block" onclick="resetForm()">リセット</button>
           </div>
@@ -482,23 +486,23 @@
       </div>
     </div>
 
-    <!-- 4. ★ 履歴・作品管理タブ (3本立て構成) -->
+    <!-- 4. ★ 履歴・作品管理タブ -->
     <div id="tab-history" class="tab-content">
       <div id="unrated-alert-container"></div>
 
-      <!-- ① 放送中・放送予定のドラマ一覧 -->
+      <!-- 放送中・放送予定のドラマ一覧 -->
       <div class="card">
         <h2>📺 放送中・放送予定のドラマ一覧</h2>
         <div id="active-drama-list"></div>
       </div>
 
-      <!-- ② 完了作品の検索 -->
+      <!-- 完了作品の検索 -->
       <div class="card">
         <h2>🔍 完了作品の検索</h2>
         <input type="text" id="history-search" placeholder="タイトル・放送局・俳優名で検索..." oninput="renderHistory()">
       </div>
 
-      <!-- ③ 視聴完了リスト -->
+      <!-- 視聴完了リスト -->
       <div class="card">
         <h2>🎬 視聴完了リスト</h2>
         <div id="history-list"></div>
@@ -934,6 +938,41 @@
       document.getElementById('schedule-container').innerHTML = '';
       document.getElementById('day-of-week').innerText = '(曜)';
       document.querySelectorAll('.service-checkbox').forEach(cb => cb.checked = false);
+
+      // 編集時のみ表示していた削除ボタンを消す
+      updateFormButtons(false);
+    }
+
+    function updateFormButtons(isEditing) {
+      const btnGroup = document.getElementById('form-btn-group');
+      if (isEditing) {
+        btnGroup.innerHTML = `
+          <button type="submit" class="btn-block">更新する</button>
+          <button type="button" class="btn-secondary btn-block" onclick="resetForm()">キャンセル</button>
+          <button type="button" class="btn-danger btn-block" onclick="deleteCurrentEditingDrama()">このドラマを削除</button>
+        `;
+      } else {
+        btnGroup.innerHTML = `
+          <button type="submit" class="btn-block">保存する</button>
+          <button type="button" class="btn-secondary btn-block" onclick="resetForm()">リセット</button>
+        `;
+      }
+    }
+
+    function deleteCurrentEditingDrama() {
+      const editId = document.getElementById('edit-id').value;
+      if (!editId) return;
+
+      const item = dramaList.find(d => d.id == editId);
+      const title = item ? item.title : 'このドラマ';
+
+      if (confirm(`「${title}」を削除してもよろしいですか？`)) {
+        dramaList = dramaList.filter(d => d.id != editId);
+        saveData();
+        alert('削除しました。');
+        resetForm();
+        switchTab('history');
+      }
     }
 
     function editDrama(id) {
@@ -968,6 +1007,9 @@
         cb.checked = (item.services || []).includes(cb.value);
       });
       updateDayOfWeek();
+
+      // 編集モード用のボタン（削除ボタン付き）に切り替え
+      updateFormButtons(true);
     }
 
     function renderTasks() {
@@ -1077,15 +1119,11 @@
       }
     }
 
-    // ----------------------------------------------------
-    // ★ 履歴・作品管理画面（3本立て処理）
-    // ----------------------------------------------------
     function renderHistory() {
       renderActiveDramas();
       renderCompletedDramas();
     }
 
-    // 1. 放送中・未完のドラマ一覧描画
     function renderActiveDramas() {
       const activeContainer = document.getElementById('active-drama-list');
       if (!activeContainer) return;
@@ -1118,7 +1156,6 @@
       }).join('');
     }
 
-    // 2 & 3. 完了作品と検索描画
     function renderCompletedDramas() {
       const alertContainer = document.getElementById('unrated-alert-container');
       const listContainer = document.getElementById('history-list');
@@ -1211,9 +1248,6 @@
       }
     }
 
-    // ----------------------------------------------------
-    // ⚙️ 設定画面マスター制御
-    // ----------------------------------------------------
     function renderMasterOptions() {
       document.getElementById('station').innerHTML = `<option value="">指定なし</option>` + masterData.stations.map(s => `<option value="${s}">${s}</option>`).join('');
       document.getElementById('writer').innerHTML = `<option value="">指定なし</option>` + masterData.writers.map(w => `<option value="${w}">${w}</option>`).join('');
